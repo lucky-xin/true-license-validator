@@ -31,9 +31,9 @@ import java.util.prefs.Preferences;
 /**
  * 自定义LicenseManager，用于增加额外的服务器硬件信息校验
  *
- * @author zifangsky
- * @date 2018/4/23
- * @since 1.0.0
+ * @author luchaoxin
+ * @version V 1.0
+ * @since 2023-11-08
  */
 public class OffLineLicenseValidator extends LicenseManager {
 
