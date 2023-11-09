@@ -133,10 +133,10 @@ public class OnLineLicenseValidator {
         if (!sign.equals(genSign)) {
             throw new IllegalStateException("invalid signature");
         }
-        int len = random.nextInt();
+        int len = random.nextInt(9) + 8;
         byte[] array = new byte[len];
         random.nextBytes(array);
-        ByteBuffer writerBuff = ByteBuffer.allocate(LicenseConstants.INTEGER_LEN + len + licBytes.length);
+        ByteBuffer writerBuff = ByteBuffer.allocate(LicenseConstants.INTEGER_LEN + 1 + len + licBytes.length);
         writerBuff.put(LicenseConstants.MAGIC_BYTE)
                 .putInt(len)
                 .put(array)
