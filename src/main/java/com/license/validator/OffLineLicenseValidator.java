@@ -45,6 +45,11 @@ public class OffLineLicenseValidator extends LicenseManager {
     }
 
     public byte[] create(CreatorParam param) throws Exception {
+        if (param.getConsumers() != null
+                && !"System".equals(param.getConsumerType())
+                && param.getConsumers() > 1) {
+            throw new LicenseContentException("consumer amount is not one");
+        }
         X500Principal principal = new X500Principal(param.getX500Name());
         LicenseContent licenseContent = new LicenseContent();
         licenseContent.setHolder(principal);
