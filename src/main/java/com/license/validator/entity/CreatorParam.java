@@ -41,12 +41,12 @@ public class CreatorParam implements Serializable {
     private Integer secretId;
 
     /**
-     * 用户类型: user:个人，1:企业，非必转
+     * 用户类型: User:个人只能激活一次，System:企业，非必转
      */
-    private String consumerType = "user";
+    private String consumerType = "User";
 
     /**
-     * 用户数量，限制该证书能让几个客户使用，默认1，非必转
+     * 能激活次数，限制该证书能让几个客户使用，默认1，非必转,如果是User类型，则只能为1
      */
     private Integer consumers = 1;
 

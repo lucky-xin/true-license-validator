@@ -72,7 +72,12 @@ public class OffLineLicenseValidator extends LicenseManager {
      * @return LicenseParam
      */
     public static LicenseParam param(LicenseKey param) {
-        Preferences preferences = Preferences.userNodeForPackage(OffLineLicenseValidator.class);
+        Preferences preferences = null;
+        if ("System".equals(param.getConsumerType())) {
+            preferences = Preferences.systemNodeForPackage(OffLineLicenseValidator.class);
+        } else {
+            preferences = Preferences.userNodeForPackage(OffLineLicenseValidator.class);
+        }
         //设置对证书内容加密的秘钥
         CipherParam cipherParam = new DefaultCipherParam(param.getStorePass());
         KeyStoreParam privateStoreParam = new CustomKeyStoreParam(

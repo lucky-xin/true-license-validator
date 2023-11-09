@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.TypeReference;
 import com.license.validator.entity.LicenseToken;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,7 +34,11 @@ public class LocalFileLicenseStore implements LicenseStore {
 
     @Override
     public LicenseToken getLicenseToken() throws IOException {
-        try (InputStream lic = Files.newInputStream(Path.of(lockFileName))) {
+        File file = new File(lockFileName);
+        if (!file.exists()) {
+            return null;
+        }
+        try (InputStream lic = new FileInputStream(file)) {
             return JSON.parseObject(lic.readAllBytes(), new TypeReference<LicenseToken>() {
             }.getType());
         }
