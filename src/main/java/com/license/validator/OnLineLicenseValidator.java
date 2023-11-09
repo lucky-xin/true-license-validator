@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * 自定义LicenseManager，在线校验
@@ -46,6 +47,10 @@ public class OnLineLicenseValidator {
 
     @Setter
     private LicenseStore licenseStore;
+
+    private final Random random = new Random();
+
+    private static final byte MAGIC_BYTE = 0x0;
 
     public OnLineLicenseValidator(String licenseValidatorUrl, String licenseFilePath) {
         this.licenseFilePath = licenseFilePath;
@@ -129,6 +134,14 @@ public class OnLineLicenseValidator {
         if (!sign.equals(genSign)) {
             throw new IllegalStateException("invalid signature");
         }
+        int len = 8;
+        byte[] array = new byte[len];
+        random.nextBytes(array);
+        ByteBuffer writerBuff = ByteBuffer.allocate(5 + len + licBytes.length);
+        writerBuff.put(MAGIC_BYTE)
+                .putInt(len)
+                .put(array)
+                .put(licBytes);
         ServerInfo serverInfo = SysUtil.getServerInfo();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -136,7 +149,7 @@ public class OnLineLicenseValidator {
                                 JSON.toJSONString(
                                         Map.of(
                                                 "uuid", uuid,
-                                                "secret", encoded,
+                                                "secret", Base64.getEncoder().encodeToString(writerBuff.array()),
                                                 "svr", serverInfo,
                                                 "serial", serial
                                         )

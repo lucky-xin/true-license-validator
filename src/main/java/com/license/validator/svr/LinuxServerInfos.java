@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ public class LinuxServerInfos extends AbstractServerInfos {
         if (inetAddresses != null && !inetAddresses.isEmpty()) {
             return inetAddresses.stream()
                     .map(InetAddress::getHostAddress)
+                    .filter(Objects::nonNull)
                     .map(String::toLowerCase)
                     .collect(Collectors.toSet());
         }
@@ -44,6 +46,7 @@ public class LinuxServerInfos extends AbstractServerInfos {
             //2. 获取所有网络接口的Mac地址
             return inetAddresses.stream()
                     .map(this::getMacByInetAddress)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
         }
 

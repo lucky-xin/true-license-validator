@@ -5,6 +5,7 @@ import com.license.validator.svr.AbstractServerInfos;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ public class WindowsServerInfos extends AbstractServerInfos {
             //2. 获取所有网络接口的Mac地址
             return inetAddresses.stream()
                     .map(this::getMacByInetAddress)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
         }
         return Set.of();

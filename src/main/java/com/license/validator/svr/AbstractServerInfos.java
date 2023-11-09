@@ -93,6 +93,9 @@ public abstract class AbstractServerInfos {
     protected String getMacByInetAddress(InetAddress inetAddr) {
         try {
             byte[] mac = NetworkInterface.getByInetAddress(inetAddr).getHardwareAddress();
+            if (mac == null || mac.length == 0) {
+                return null;
+            }
             StringBuilder stringBuffer = new StringBuilder();
             for (int i = 0; i < mac.length; i++) {
                 if (i != 0) {
