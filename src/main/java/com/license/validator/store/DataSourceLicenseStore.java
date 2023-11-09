@@ -1,4 +1,6 @@
-package com.license.validator;
+package com.license.validator.store;
+
+import com.license.validator.entity.LicenseToken;
 
 import javax.sql.DataSource;
 import java.io.IOException;

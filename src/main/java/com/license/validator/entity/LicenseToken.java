@@ -1,4 +1,4 @@
-package com.license.validator;
+package com.license.validator.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

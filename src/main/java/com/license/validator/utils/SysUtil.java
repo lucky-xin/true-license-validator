@@ -1,4 +1,9 @@
-package com.license.validator;
+package com.license.validator.utils;
+
+import com.license.validator.svr.AbstractServerInfos;
+import com.license.validator.svr.LinuxServerInfos;
+import com.license.validator.svr.ServerInfo;
+import com.license.validator.svr.WindowsServerInfos;
 
 /**
  * Sys

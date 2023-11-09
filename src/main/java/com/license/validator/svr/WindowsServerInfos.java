@@ -1,25 +1,22 @@
-package com.license.validator;
+package com.license.validator.svr;
 
+import com.license.validator.svr.AbstractServerInfos;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 用于获取客户Linux服务器的基本信息
+ * 用于获取客户Windows服务器的基本信息
  *
  * @author luchaoxin
  * @version V 1.0
  * @since 2023-11-06
  */
-public class LinuxServerInfos extends AbstractServerInfos {
+public class WindowsServerInfos extends AbstractServerInfos {
 
     @Override
     protected Set<String> getIpAddress() throws SocketException {
@@ -31,7 +28,6 @@ public class LinuxServerInfos extends AbstractServerInfos {
                     .map(String::toLowerCase)
                     .collect(Collectors.toSet());
         }
-
         return Set.of();
     }
 
@@ -39,14 +35,12 @@ public class LinuxServerInfos extends AbstractServerInfos {
     protected Set<String> getMacAddress() throws SocketException {
         //1. 获取所有网络接口
         List<InetAddress> inetAddresses = getLocalAllInetAddress();
-
         if (inetAddresses != null && !inetAddresses.isEmpty()) {
             //2. 获取所有网络接口的Mac地址
             return inetAddresses.stream()
                     .map(this::getMacByInetAddress)
                     .collect(Collectors.toSet());
         }
-
         return Set.of();
     }
 
@@ -54,37 +48,38 @@ public class LinuxServerInfos extends AbstractServerInfos {
     protected String getCPUSerial() throws Exception {
         //序列号
         String serialNumber = "";
-
-        //使用dmidecode命令获取CPU序列号
-        String[] shell = {
-                "/bin/bash",
-                "-c",
-                "dmidecode -t processor | grep 'ID' | awk -F ':' '{print $2}' | head -n 1"
-        };
-        return getString(serialNumber, shell);
-    }
-
-    private String getString(String serialNumber, String[] shell) throws IOException {
-        Process process = Runtime.getRuntime().exec(shell);
-        try (InputStream in = process.getInputStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));) {
-            String line = reader.readLine();
-            if (line != null && !line.isEmpty()) {
-                serialNumber = line;
+        //使用WMIC获取CPU序列号
+        Process process = Runtime.getRuntime().exec("wmic cpu get process orid");
+        Scanner scanner = new Scanner(process.getInputStream());
+        try (scanner) {
+            if (scanner.hasNext()) {
+                scanner.next();
             }
+            if (scanner.hasNext()) {
+                serialNumber = scanner.next().trim();
+            }
+            return serialNumber;
         }
-        return serialNumber;
     }
 
     @Override
     protected String getMainBoardSerial() throws Exception {
         //序列号
         String serialNumber = "";
-        //使用dmidecode命令获取主板序列号
-        String[] shell = {
-                "/bin/bash",
-                "-c",
-                "dmidecode | grep 'Serial Number' | awk -F ':' '{print $2}' | head -n 1"};
-        return getString(serialNumber, shell);
+
+        //使用WMIC获取主板序列号
+        Process process = Runtime.getRuntime().exec("wmic baseboard get serial number");
+        process.getOutputStream().close();
+        Scanner scanner = new Scanner(process.getInputStream());
+        try (scanner) {
+            if (scanner.hasNext()) {
+                scanner.next();
+            }
+            if (scanner.hasNext()) {
+                serialNumber = scanner.next().trim();
+            }
+
+            return serialNumber;
+        }
     }
 }

@@ -2,6 +2,13 @@ package com.license.validator;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import com.license.validator.entity.LicenseToken;
+import com.license.validator.entity.R;
+import com.license.validator.store.LicenseStore;
+import com.license.validator.svr.LocalFileLicenseStore;
+import com.license.validator.svr.ServerInfo;
+import com.license.validator.utils.SignatureHelper;
+import com.license.validator.utils.SysUtil;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,15 +46,10 @@ public class OnLineLicenseValidator {
     @Setter
     private LicenseStore licenseStore;
 
-    public OnLineLicenseValidator(String licenseServerEndpoint, String licenseFilePath) {
+    public OnLineLicenseValidator(String licenseValidatorUrl, String licenseFilePath) {
         this.licenseFilePath = licenseFilePath;
-        if (licenseServerEndpoint.endsWith("/")) {
-            this.url = licenseServerEndpoint + "license/activate";
-        } else {
-            this.url = licenseServerEndpoint + "/license/activate";
-        }
-
-        boolean isHttps = licenseServerEndpoint.startsWith("https");
+        this.url = licenseValidatorUrl;
+        boolean isHttps = licenseValidatorUrl.startsWith("https");
         HttpClient.Version version = HttpClient.Version.HTTP_1_1;
         if (isHttps) {
             version = HttpClient.Version.HTTP_2;

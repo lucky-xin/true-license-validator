@@ -1,4 +1,4 @@
-package com.license.validator;
+package com.license.validator.svr;
 
 import lombok.Data;
 

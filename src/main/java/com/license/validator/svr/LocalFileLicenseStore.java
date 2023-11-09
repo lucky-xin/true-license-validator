@@ -1,7 +1,9 @@
-package com.license.validator;
+package com.license.validator.svr;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import com.license.validator.store.LicenseStore;
+import com.license.validator.entity.LicenseToken;
 
 import java.io.IOException;
 import java.io.InputStream;

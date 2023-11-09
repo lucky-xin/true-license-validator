@@ -1,4 +1,4 @@
-package com.license.validator;
+package com.license.validator.utils;
 
 import lombok.experimental.UtilityClass;
 
