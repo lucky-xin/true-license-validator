@@ -37,8 +37,8 @@ import java.util.Random;
  * @version V 1.0
  * @since 2023-11-06
  */
-public class OnLineLicenseValidator {
-    static final Logger log = LoggerFactory.getLogger(OnLineLicenseValidator.class);
+public class OnlineLicenseValidator {
+    static final Logger log = LoggerFactory.getLogger(OnlineLicenseValidator.class);
 
     private final String licenseFilePath;
     private volatile LicenseToken token;
@@ -51,7 +51,7 @@ public class OnLineLicenseValidator {
 
     private final Random random = new Random();
 
-    public OnLineLicenseValidator(String licenseValidatorUrl, String licenseFilePath) {
+    public OnlineLicenseValidator(String licenseValidatorUrl, String licenseFilePath) {
         this.licenseFilePath = licenseFilePath;
         this.url = licenseValidatorUrl;
         boolean isHttps = licenseValidatorUrl.startsWith("https");

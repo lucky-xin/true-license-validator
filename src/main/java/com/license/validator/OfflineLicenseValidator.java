@@ -35,12 +35,12 @@ import java.util.prefs.Preferences;
  * @version V 1.0
  * @since 2023-11-08
  */
-public class OffLineLicenseValidator extends LicenseManager {
+public class OfflineLicenseValidator extends LicenseManager {
 
     //默认BUFSIZE
     private static final int DEFAULT_BUFSIZE = 8 * 1024;
 
-    public OffLineLicenseValidator(LicenseKey param) {
+    public OfflineLicenseValidator(LicenseKey param) {
         super(param(param));
     }
 
@@ -79,9 +79,9 @@ public class OffLineLicenseValidator extends LicenseManager {
     public static LicenseParam param(LicenseKey param) {
         Preferences preferences = null;
         if ("System".equals(param.getConsumerType())) {
-            preferences = Preferences.systemNodeForPackage(OffLineLicenseValidator.class);
+            preferences = Preferences.systemNodeForPackage(OfflineLicenseValidator.class);
         } else {
-            preferences = Preferences.userNodeForPackage(OffLineLicenseValidator.class);
+            preferences = Preferences.userNodeForPackage(OfflineLicenseValidator.class);
         }
         //设置对证书内容加密的秘钥
         CipherParam cipherParam = new DefaultCipherParam(param.getStorePass());
