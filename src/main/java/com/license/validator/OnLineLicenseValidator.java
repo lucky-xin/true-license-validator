@@ -8,6 +8,7 @@ import com.license.validator.exception.LicenseInvalidException;
 import com.license.validator.store.LicenseStore;
 import com.license.validator.store.LocalFileLicenseStore;
 import com.license.validator.svr.ServerInfo;
+import com.license.validator.utils.LicenseConstants;
 import com.license.validator.utils.SignatureHelper;
 import com.license.validator.utils.SysUtil;
 import lombok.Setter;
@@ -49,8 +50,6 @@ public class OnLineLicenseValidator {
     private LicenseStore licenseStore;
 
     private final Random random = new Random();
-
-    private static final byte MAGIC_BYTE = 0x0;
 
     public OnLineLicenseValidator(String licenseValidatorUrl, String licenseFilePath) {
         this.licenseFilePath = licenseFilePath;
@@ -134,11 +133,11 @@ public class OnLineLicenseValidator {
         if (!sign.equals(genSign)) {
             throw new IllegalStateException("invalid signature");
         }
-        int len = 8;
+        int len = random.nextInt();
         byte[] array = new byte[len];
         random.nextBytes(array);
-        ByteBuffer writerBuff = ByteBuffer.allocate(5 + len + licBytes.length);
-        writerBuff.put(MAGIC_BYTE)
+        ByteBuffer writerBuff = ByteBuffer.allocate(LicenseConstants.INTEGER_LEN + len + licBytes.length);
+        writerBuff.put(LicenseConstants.MAGIC_BYTE)
                 .putInt(len)
                 .put(array)
                 .put(licBytes);
