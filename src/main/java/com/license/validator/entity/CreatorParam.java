@@ -21,37 +21,32 @@ public class CreatorParam implements Serializable {
     private static final long serialVersionUID = -7793154252684580872L;
 
     /**
+     * 证书失效时间，必传
+     */
+    private Date expiry;
+
+    /**
      * 证书x500Name
      */
     private String x500Name = "CN=localhost, OU=IT, O=localhost, L=GZ, ST=GD, C=CN";
 
     /**
-     * license id
-     */
-    private String uuid;
-
-    /**
-     * 密钥id
-     */
-    private Integer secretId;
-
-    /**
-     * 证书生效时间
+     * 证书生效时间，非必传
      */
     private Date issued;
 
     /**
-     * 证书失效时间
+     * 密钥id,默认1非必转
      */
-    private Date expiry;
+    private Integer secretId;
 
     /**
-     * 用户类型: user:个人，1:企业
+     * 用户类型: user:个人，1:企业，非必转
      */
     private String consumerType = "user";
 
     /**
-     * 用户数量
+     * 用户数量，限制该证书能让几个客户使用，默认1，非必转
      */
     private Integer consumers = 1;
 
