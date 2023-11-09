@@ -71,7 +71,6 @@ public class OnLineLicenseValidator {
         try (InputStream in = Files.newInputStream(Path.of(licenseFilePath))) {
             token = verify(in.readAllBytes(), "");
         }
-        licenseStore.storeLicenseToken(token);
         return token;
     }
 
@@ -89,11 +88,15 @@ public class OnLineLicenseValidator {
     private LicenseToken initVerify() throws Exception {
         LicenseToken licenseToken = licenseStore.getLicenseToken();
         if (licenseToken == null) {
-            return install();
+            LicenseToken verify = install();
+            licenseStore.storeLicenseToken(verify);
+            return verify;
         }
 
         try (InputStream lic = Files.newInputStream(Path.of(licenseFilePath))) {
-            return verify(lic.readAllBytes(), licenseToken.getSerial());
+            LicenseToken verify = verify(lic.readAllBytes(), licenseToken.getSerial());
+            licenseStore.storeLicenseToken(verify);
+            return verify;
         } catch (Exception e) {
             log.error("license verify failed", e);
             return null;
@@ -130,7 +133,7 @@ public class OnLineLicenseValidator {
                                 JSON.toJSONString(
                                         Map.of(
                                                 "uuid", uuid,
-                                                "sign", sign,
+                                                "secret", encoded,
                                                 "svr", serverInfo,
                                                 "serial", serial
                                         )

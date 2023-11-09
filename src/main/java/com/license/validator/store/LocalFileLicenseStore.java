@@ -4,11 +4,13 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.license.validator.entity.LicenseToken;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * License 校验成功缓存
@@ -18,11 +20,20 @@ import java.nio.file.Path;
  * @since 2023-11-08
  */
 public class LocalFileLicenseStore implements LicenseStore {
-    private static final String LOCK_FILE_NAME = "lock";
+    private final String lockFileName;
+
+    public LocalFileLicenseStore() {
+        lockFileName = Optional.ofNullable(System.getenv("LICENSE_FILE_PATH"))
+                .map(f -> {
+                    int idx = f.lastIndexOf(File.pathSeparator);
+                    return f.substring(0, idx) + File.pathSeparator + "lock";
+                })
+                .orElse("lock");
+    }
 
     @Override
     public LicenseToken getLicenseToken() throws IOException {
-        try (InputStream lic = Files.newInputStream(Path.of(LOCK_FILE_NAME))) {
+        try (InputStream lic = Files.newInputStream(Path.of(lockFileName))) {
             return JSON.parseObject(lic.readAllBytes(), new TypeReference<LicenseToken>() {
             }.getType());
         }
@@ -30,7 +41,7 @@ public class LocalFileLicenseStore implements LicenseStore {
 
     @Override
     public void storeLicenseToken(LicenseToken token) throws IOException {
-        try (OutputStream out = Files.newOutputStream(Path.of(LOCK_FILE_NAME))) {
+        try (OutputStream out = Files.newOutputStream(Path.of(lockFileName))) {
             JSON.writeTo(out, token);
         }
     }
