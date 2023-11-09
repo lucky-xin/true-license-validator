@@ -3,7 +3,6 @@ package com.license.validator;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.log4j.Log4j2;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -14,7 +13,6 @@ import java.io.Serializable;
  * @param <T>
  * @author chaoxin.lu
  */
-@Log4j2
 @Data
 public class R<T> implements Serializable {
     @Serial

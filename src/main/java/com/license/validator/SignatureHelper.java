@@ -1,7 +1,6 @@
 package com.license.validator;
 
 import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -17,7 +16,6 @@ import java.util.Base64;
  * @version V 1.0
  * @since 2021-01-30
  */
-@Log4j2
 @UtilityClass
 public class SignatureHelper {
 

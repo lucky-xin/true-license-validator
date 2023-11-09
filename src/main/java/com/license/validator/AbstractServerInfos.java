@@ -1,7 +1,5 @@
 package com.license.validator;
 
-import lombok.extern.log4j.Log4j2;
-
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -17,7 +15,6 @@ import java.util.Set;
  * @version V 1.0
  * @since 2023-11-06
  */
-@Log4j2
 public abstract class AbstractServerInfos {
 
     /**
