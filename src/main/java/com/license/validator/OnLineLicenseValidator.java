@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.license.validator.entity.LicenseToken;
 import com.license.validator.entity.R;
+import com.license.validator.exception.LicenseInvalidException;
 import com.license.validator.store.LicenseStore;
 import com.license.validator.svr.LocalFileLicenseStore;
 import com.license.validator.svr.ServerInfo;
@@ -98,6 +99,9 @@ public class OnLineLicenseValidator {
             licenseStore.storeLicenseToken(verify);
             return verify;
         } catch (Exception e) {
+            if (e instanceof LicenseInvalidException l) {
+                throw l;
+            }
             log.error("license verify failed", e);
             return null;
         }
@@ -148,7 +152,7 @@ public class OnLineLicenseValidator {
         }.getType();
         R<LicenseToken> r = JSON.parseObject(json, type);
         if (r.getCode() != 1) {
-            throw new IllegalStateException(r.getMsg());
+            throw new LicenseInvalidException(r.getMsg());
         }
         return r.getData();
     }
