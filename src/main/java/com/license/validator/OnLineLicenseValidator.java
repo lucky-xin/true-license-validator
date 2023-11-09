@@ -6,7 +6,7 @@ import com.license.validator.entity.LicenseToken;
 import com.license.validator.entity.R;
 import com.license.validator.exception.LicenseInvalidException;
 import com.license.validator.store.LicenseStore;
-import com.license.validator.svr.LocalFileLicenseStore;
+import com.license.validator.store.LocalFileLicenseStore;
 import com.license.validator.svr.ServerInfo;
 import com.license.validator.utils.SignatureHelper;
 import com.license.validator.utils.SysUtil;
@@ -61,7 +61,6 @@ public class OnLineLicenseValidator {
                 .build();
         this.licenseStore = new LocalFileLicenseStore();
     }
-
 
     /**
      * 复写install方法，其中validate方法调用本类中的validate方法，校验IP地址、Mac地址等其他信息
