@@ -26,8 +26,8 @@ public class LocalFileLicenseStore implements LicenseStore {
     public LocalFileLicenseStore() {
         lockFileName = Optional.ofNullable(System.getenv("LICENSE_FILE_PATH"))
                 .map(f -> {
-                    int idx = f.lastIndexOf(File.pathSeparator);
-                    return f.substring(0, idx) + File.pathSeparator + "lock";
+                    int idx = f.lastIndexOf(File.separator);
+                    return f.substring(0, idx) + File.separator + "lock";
                 })
                 .orElse("lock");
     }
