@@ -4,7 +4,7 @@
 
     <groupId>com.license.validator</groupId>
     <artifactId>true-license-validator</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 
     <name>true-license-validator</name>
     <url>http://maven.apache.org</url>
@@ -22,6 +22,11 @@
             <groupId>com.alibaba.fastjson2</groupId>
             <artifactId>fastjson2</artifactId>
             <version>2.0.41</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5</artifactId>
+            <version>5.2.3</version>
         </dependency>
 
         <dependency>

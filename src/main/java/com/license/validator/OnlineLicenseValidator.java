@@ -12,9 +12,12 @@ import com.license.validator.utils.LicenseConstants;
 import com.license.validator.utils.SignatureHelper;
 import com.license.validator.utils.SysUtil;
 import lombok.Setter;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -56,10 +59,19 @@ public class OnlineLicenseValidator {
         this.url = licenseValidatorUrl;
         boolean isHttps = licenseValidatorUrl.startsWith("https");
         HttpClient.Version version = HttpClient.Version.HTTP_1_1;
+        HttpClient.Builder builder = HttpClient.newBuilder();
         if (isHttps) {
             version = HttpClient.Version.HTTP_2;
+            TrustStrategy ts = (x509Certificates, s) -> true;
+            try {
+                SSLContext context = SSLContexts.custom().loadTrustMaterial(ts).build();
+                builder.sslContext(context);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
         }
-        this.cli = HttpClient.newBuilder()
+
+        this.cli = builder
                 .version(version)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
