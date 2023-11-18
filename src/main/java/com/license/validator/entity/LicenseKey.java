@@ -53,6 +53,11 @@ public class LicenseKey implements Serializable {
     private byte[] keysStoreBytes;
 
     /**
+     * AES密钥文件bytes
+     */
+    private byte[] aesKeyBytes;
+
+    /**
      * 用户类型: User:个人，只能激活一次，System:企业，非必转
      */
     private String consumerType = "System";

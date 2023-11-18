@@ -1,7 +1,5 @@
 package com.license.validator.svr;
 
-import com.license.validator.svr.AbstractServerInfos;
-
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.List;
