@@ -19,6 +19,9 @@ public class CreatorParam implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -7793154252684580872L;
+
+    private Long secretId = 1L;
+
     /**
      * 证书生效时间，非必传
      */

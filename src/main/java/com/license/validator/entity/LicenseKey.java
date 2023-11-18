@@ -38,11 +38,6 @@ public class LicenseKey implements Serializable {
     private String keyPass;
 
     /**
-     * 访问秘钥库的密码
-     */
-    private String storePass;
-
-    /**
      * key alg
      */
     private String alg;
