@@ -62,10 +62,6 @@ public class V4Authentication implements Authentication {
         return cache.verify(controller);
     }
 
-    private AuthenticationParameters parameters() {
-        return parameters;
-    }
-
     private final class Cache {
 
         KeyStore keyStore;
@@ -140,26 +136,29 @@ public class V4Authentication implements Authentication {
             } else if (isCertificateEntry()) {
                 return keyStoreEntry(Optional.empty());
             } else {
-                assert !keyStore().containsAlias(alias());
+                assert !ks().containsAlias(alias());
                 throw new NotaryException(message(NO_SUCH_ENTRY));
             }
         }
 
         boolean isKeyEntry() throws Exception {
-            return keyStore().isKeyEntry(alias());
+            return ks().isKeyEntry(alias());
         }
 
         boolean isCertificateEntry() throws Exception {
-            return keyStore().isCertificateEntry(alias());
+            return ks().isCertificateEntry(alias());
         }
 
         KeyStore.Entry keyStoreEntry(Optional<KeyStore.PasswordProtection> protection) throws Exception {
-            return keyStore().getEntry(alias(), protection.orElse(null));
+            return ks().getEntry(alias(), protection.orElse(null));
         }
 
-        KeyStore keyStore() throws Exception {
-            final KeyStore ks = keyStore;
-            return null != ks ? ks : (keyStore = newKeyStore());
+        KeyStore ks() throws Exception {
+            if (keyStore != null) {
+                return keyStore;
+            }
+            keyStore = newKeyStore();
+            return keyStore;
         }
 
         KeyStore newKeyStore() throws Exception {
@@ -181,27 +180,27 @@ public class V4Authentication implements Authentication {
         }
 
         String alias() {
-            return parameters().alias();
+            return parameters.alias();
         }
 
         PasswordProtection keyProtection() {
-            return parameters().keyProtection();
+            return parameters.keyProtection();
         }
 
         Optional<String> configuredAlgorithm() {
-            return parameters().algorithm();
+            return parameters.algorithm();
         }
 
         Optional<Source> source() {
-            return parameters().source();
+            return parameters.source();
         }
 
         PasswordProtection storeProtection() {
-            return parameters().storeProtection();
+            return parameters.storeProtection();
         }
 
         String storeType() {
-            return parameters().storeType();
+            return parameters.storeType();
         }
     }
 }
