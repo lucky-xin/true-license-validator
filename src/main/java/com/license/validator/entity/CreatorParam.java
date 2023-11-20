@@ -1,10 +1,13 @@
 package com.license.validator.entity;
 
+import global.namespace.truelicense.api.License;
 import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -66,4 +69,28 @@ public class CreatorParam implements Serializable {
      * 可被允许的主板序列号
      */
     private String boardSerial;
+
+    public License toLicense(License orig) {
+        orig.setIssued(this.issued);
+        orig.setNotAfter(this.expiry);
+        orig.setNotBefore(this.issued);
+        orig.setConsumerAmount(this.consumers);
+        orig.setConsumerType("System");
+        orig.setInfo(this.description);
+        Map<String, Object> ext = new HashMap<>();
+        if (ipAddrs != null) {
+            ext.put("ips", ipAddrs);
+        }
+        if (macAddrs != null) {
+            ext.put("macs", macAddrs);
+        }
+        if (cpuSerial != null) {
+            ext.put("cpuSerial", cpuSerial);
+        }
+        if (boardSerial != null) {
+            ext.put("boardSerial", boardSerial);
+        }
+        orig.setExtra(ext);
+        return orig;
+    }
 }
