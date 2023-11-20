@@ -24,7 +24,7 @@ public class V4RepositoryController implements RepositoryController {
     private final Codec codec;
     private final V4RepositoryFactory.V4RepositoryModel model;
 
-    V4RepositoryController(Codec codec, V4RepositoryFactory.V4RepositoryModel model) {
+    public V4RepositoryController(Codec codec, V4RepositoryFactory.V4RepositoryModel model) {
         this.codec = requireNonNull(codec);
         this.model = requireNonNull(model);
     }
