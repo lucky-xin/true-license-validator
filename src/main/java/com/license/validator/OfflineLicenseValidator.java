@@ -61,7 +61,7 @@ public class OfflineLicenseValidator {
         ObfuscatedPasswordProtection protection = new ObfuscatedPasswordProtection(obfuscatedString);
         V4EncryptionParameters parameters = new V4EncryptionParameters(
                 secretKey,
-                "AES",
+                V4Encryption.ALGORITHM,
                 protection
         );
         V4AuthenticationParameters authParams = V4ParametersUtils.authParams(licenseKey);
