@@ -22,10 +22,11 @@ public class V4Authentication implements Authentication {
 
     private final V4AuthenticationParameters parameters;
 
-    final Cache cache = new Cache();
+    final Cache cache;
 
     public V4Authentication(final V4AuthenticationParameters parameters) {
         this.parameters = Objects.requireNonNull(parameters);
+        this.cache = new Cache(parameters);
     }
 
     @Override
@@ -40,7 +41,11 @@ public class V4Authentication implements Authentication {
 
     private final class Cache {
 
-        KeyStoreResolver resolver = new KeyStoreResolver(parameters);
+        private final KeyStoreResolver resolver;
+
+        public Cache(V4AuthenticationParameters parameters) {
+            this.resolver = new KeyStoreResolver(parameters);
+        }
 
         Decoder sign(RepositoryController controller, Object artifact) throws Exception {
             Signature engine = engine();
