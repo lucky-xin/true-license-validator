@@ -9,7 +9,6 @@ import com.license.validator.entity.LicenseKey;
 import com.license.validator.entity.LicenseResolver;
 import com.license.validator.entity.LicenseToken;
 import com.license.validator.store.LicenseStore;
-import global.namespace.fun.io.api.Filter;
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.ConsumerLicenseManager;
@@ -27,6 +26,7 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.UUID;
+import java.util.zip.Deflater;
 
 /**
  * 自定义LicenseManager，离线线校验
@@ -66,7 +66,7 @@ public class OfflineLicenseValidator {
                 .codecFactory(new V4CodecFactory(encryption))
                 .encryptionFactory(p -> encryption)
                 .clock(Clock.systemUTC())
-                .compression(Filter.IDENTITY)
+                .compression(BIOS.deflate(Deflater.BEST_COMPRESSION))
                 .initializationComposition(LicenseFunctionComposition.decorate)
                 .passwordPolicy(new MinimumPasswordPolicy())
                 .subject(licenseKey.getSubject())
