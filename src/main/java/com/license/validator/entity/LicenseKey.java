@@ -48,6 +48,11 @@ public class LicenseKey implements Serializable {
     private byte[] keysStoreBytes;
 
     /**
+     * storeType
+     */
+    private String storeType;
+
+    /**
      * AES密钥文件bytes
      */
     private byte[] aesKeyBytes;

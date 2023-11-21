@@ -2,6 +2,7 @@ package com.license.validator;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import com.license.validator.auth.Messages;
 import com.license.validator.entity.LicenseToken;
 import com.license.validator.entity.R;
 import com.license.validator.exception.LicenseInvalidException;
@@ -11,6 +12,7 @@ import com.license.validator.svr.ServerInfo;
 import com.license.validator.utils.LicenseConstants;
 import com.license.validator.utils.SignatureHelper;
 import com.license.validator.utils.SysUtil;
+import global.namespace.truelicense.api.LicenseValidationException;
 import lombok.Setter;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
@@ -175,7 +177,7 @@ public class OnlineLicenseValidator {
         }.getType();
         R<LicenseToken> r = JSON.parseObject(json, type);
         if (r.getCode() != 1) {
-            throw new LicenseInvalidException(r.getMsg());
+            throw new LicenseValidationException(Messages.lite(r.getMsg()));
         }
         return r.getData();
     }

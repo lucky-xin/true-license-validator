@@ -85,10 +85,10 @@ public class CreatorParam implements Serializable {
             ext.put("macs", macAddrs);
         }
         if (cpuSerial != null) {
-            ext.put("cpuSerial", cpuSerial);
+            ext.put("cpu", cpuSerial);
         }
         if (boardSerial != null) {
-            ext.put("boardSerial", boardSerial);
+            ext.put("board", boardSerial);
         }
         orig.setExtra(ext);
         return orig;
