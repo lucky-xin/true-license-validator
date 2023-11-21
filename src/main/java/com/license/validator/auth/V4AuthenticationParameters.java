@@ -4,6 +4,8 @@ import global.namespace.fun.io.api.Source;
 import global.namespace.truelicense.api.auth.AuthenticationParameters;
 import global.namespace.truelicense.api.passwd.PasswordProtection;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Optional;
 
 /**
@@ -19,5 +21,9 @@ public record V4AuthenticationParameters(
         PasswordProtection keyProtection,
         Optional<Source> source,
         PasswordProtection storeProtection,
-        String storeType) implements AuthenticationParameters {
+        String storeType,
+        Optional<PrivateKey> privateKey,
+        Optional<PublicKey> publicKey
+) implements AuthenticationParameters {
+
 }

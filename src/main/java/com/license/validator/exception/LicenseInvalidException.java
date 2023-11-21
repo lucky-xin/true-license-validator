@@ -11,4 +11,12 @@ public class LicenseInvalidException extends RuntimeException {
     public LicenseInvalidException(Throwable cause) {
         super(cause);
     }
+
+    public LicenseInvalidException(String message) {
+        super(message);
+    }
+
+    public LicenseInvalidException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

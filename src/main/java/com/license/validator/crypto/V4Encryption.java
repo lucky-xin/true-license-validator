@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
  */
 public class V4Encryption extends EncryptionMixin implements Encryption {
 
+    public static final String ALGORITHM = "AES";
     private final V4EncryptionParameters parameters;
 
     public V4Encryption(V4EncryptionParameters parameters) {
@@ -32,7 +33,7 @@ public class V4Encryption extends EncryptionMixin implements Encryption {
     @Override
     public Socket<OutputStream> output(final Socket<OutputStream> output) {
         return output.map(out -> {
-            Cipher cipher = Cipher.getInstance("AES");
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, parameters.aesKey());
             return new CipherOutputStream(out, cipher);
         });
@@ -47,7 +48,7 @@ public class V4Encryption extends EncryptionMixin implements Encryption {
     }
 
     public Cipher inCipher() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
-        Cipher cipher = Cipher.getInstance("AES");
+        Cipher cipher = Cipher.getInstance(ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, parameters.aesKey());
         return cipher;
     }

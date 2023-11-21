@@ -1,6 +1,7 @@
 package com.license.validator;
 
 import com.license.validator.auth.V4Authentication;
+import com.license.validator.auth.V4AuthenticationParameters;
 import com.license.validator.auth.V4RepositoryFactory;
 import com.license.validator.codec.V4CodecFactory;
 import com.license.validator.crypto.V4Encryption;
@@ -9,6 +10,7 @@ import com.license.validator.entity.LicenseKey;
 import com.license.validator.entity.LicenseResolver;
 import com.license.validator.entity.LicenseToken;
 import com.license.validator.store.LicenseStore;
+import com.license.validator.utils.V4ParametersUtils;
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.ConsumerLicenseManager;
@@ -19,8 +21,6 @@ import global.namespace.truelicense.core.passwd.ObfuscatedPasswordProtection;
 import global.namespace.truelicense.obfuscate.ObfuscatedString;
 import global.namespace.truelicense.v4.V4;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
@@ -36,8 +36,6 @@ import java.util.zip.Deflater;
  * @since 2023-11-06
  */
 public class OfflineLicenseValidator {
-    static final Logger log = LoggerFactory.getLogger(OfflineLicenseValidator.class);
-
     private final Store license;
     private volatile LicenseToken token;
 
@@ -59,9 +57,10 @@ public class OfflineLicenseValidator {
                 "AES",
                 protection
         );
+        V4AuthenticationParameters authParams = V4ParametersUtils.authParams(licenseKey);
         V4Encryption encryption = new V4Encryption(parameters);
         LicenseManagementContext context = V4.builder()
-                .authenticationFactory(V4Authentication::new)
+                .authenticationFactory(p -> new V4Authentication(authParams))
                 .cachePeriodMillis(1000L)
                 .codecFactory(new V4CodecFactory(encryption))
                 .encryptionFactory(p -> encryption)
@@ -75,6 +74,7 @@ public class OfflineLicenseValidator {
                 .build();
 
         Store clm = BIOS.memory(1024 * 1024);
+
         byte[] keysStoreBytes = licenseKey.getKeysStoreBytes();
         Store ks = BIOS.memory(keysStoreBytes.length);
         ks.content(keysStoreBytes);
@@ -105,9 +105,12 @@ public class OfflineLicenseValidator {
 
     public LicenseToken verify() throws Exception {
         if (token == null) {
+            token = licenseStore.getLicenseToken();
             synchronized (this) {
+                token = licenseStore.getLicenseToken();
                 if (token == null) {
                     token = install();
+                    licenseStore.storeLicenseToken(token);
                 }
             }
         }

@@ -29,7 +29,7 @@ public class V4CodecFactory implements CodecFactory {
         private final ObjectMapper mapper = new global.namespace.truelicense.v4.V4CodecFactory().objectMapper();
         @Override
         public String contentType() {
-            return "application/AES";
+            return "application/aes";
         }
 
         @Override
