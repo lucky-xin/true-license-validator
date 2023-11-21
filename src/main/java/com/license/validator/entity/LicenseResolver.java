@@ -1,7 +1,6 @@
 package com.license.validator.entity;
 
 import com.license.validator.auth.Messages;
-import com.license.validator.utils.LicenseConstants;
 import com.license.validator.utils.SignatureHelper;
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
@@ -77,9 +76,6 @@ public class LicenseResolver implements Serializable {
 
     public LicenseBody resolve() throws Exception {
         ByteBuffer buffer = ByteBuffer.wrap(content);
-        if (buffer.get() != LicenseConstants.MAGIC_BYTE) {
-            throw new LicenseValidationException(Messages.lite("invalid license"));
-        }
         int uuidLen = buffer.getInt();
         byte[] uuidBytes = new byte[uuidLen];
         buffer.get(uuidBytes, 0, uuidLen);
