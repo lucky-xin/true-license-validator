@@ -49,6 +49,13 @@ public class LicenseResolver implements Serializable {
     public record LicenseBody(String uuid,
                               String sign,
                               byte[] licBytes) {
+
+        public Store toStore() throws IOException {
+            Store tmp = BIOS.memory(licBytes.length);
+            tmp.content(licBytes);
+            return tmp;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
