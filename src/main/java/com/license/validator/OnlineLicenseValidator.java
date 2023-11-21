@@ -3,6 +3,7 @@ package com.license.validator;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.license.validator.auth.Messages;
+import com.license.validator.entity.LicenseResolver;
 import com.license.validator.entity.LicenseToken;
 import com.license.validator.entity.R;
 import com.license.validator.exception.LicenseInvalidException;
@@ -10,7 +11,6 @@ import com.license.validator.store.LicenseStore;
 import com.license.validator.store.LocalFileLicenseStore;
 import com.license.validator.svr.ServerInfo;
 import com.license.validator.utils.LicenseConstants;
-import com.license.validator.utils.SignatureHelper;
 import com.license.validator.utils.SysUtil;
 import global.namespace.truelicense.api.LicenseValidationException;
 import lombok.Setter;
@@ -126,30 +126,11 @@ public class OnlineLicenseValidator {
 
     @SuppressWarnings("all")
     public LicenseToken verify(byte[] bytes, String serial) throws Exception {
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        int uuidLen = buffer.getInt();
-        byte[] uuidBytes = new byte[uuidLen];
-        buffer.get(uuidBytes, 0, uuidLen);
-
-        int signLen = buffer.getInt();
-        byte[] signBytes = new byte[signLen];
-        buffer.get(signBytes, 0, signLen);
-        String uuid = new String(uuidBytes, StandardCharsets.UTF_8);
-        String sign = new String(signBytes, StandardCharsets.UTF_8);
-
-        int start = buffer.position() + buffer.arrayOffset();
-        int length = buffer.limit() - uuidLen - signLen - 8;
-        byte[] licBytes = new byte[length];
-        buffer.get(start, licBytes, 0, length);
-
-        String encoded = Base64.getEncoder().encodeToString(licBytes);
-        String genSign = SignatureHelper.genSign(encoded, uuid);
-        if (!sign.equals(genSign)) {
-            throw new IllegalStateException("invalid signature");
-        }
+        LicenseResolver.LicenseBody resolve = new LicenseResolver(bytes).resolve();
         int len = random.nextInt(9) + 8;
         byte[] array = new byte[len];
         random.nextBytes(array);
+        byte[] licBytes = resolve.secret().content();
         ByteBuffer writerBuff = ByteBuffer.allocate(LicenseConstants.INTEGER_LEN + 1 + len + licBytes.length);
         writerBuff.put(LicenseConstants.MAGIC_BYTE)
                 .putInt(len)
@@ -161,7 +142,7 @@ public class OnlineLicenseValidator {
                 .POST(HttpRequest.BodyPublishers.ofString(
                                 JSON.toJSONString(
                                         Map.of(
-                                                "uuid", uuid,
+                                                "uuid", resolve.uuid(),
                                                 "secret", Base64.getEncoder().encodeToString(writerBuff.array()),
                                                 "svr", serverInfo,
                                                 "serial", serial
