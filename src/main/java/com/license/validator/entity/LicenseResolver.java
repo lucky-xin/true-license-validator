@@ -1,19 +1,22 @@
 package com.license.validator.entity;
 
 import com.license.validator.auth.Messages;
+import com.license.validator.utils.LicenseConstants;
 import com.license.validator.utils.SignatureHelper;
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.LicenseValidationException;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Objects;
 
 /**
  * License密钥
@@ -24,7 +27,6 @@ import java.util.Base64;
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class LicenseResolver implements Serializable {
 
     @Serial
@@ -35,12 +37,49 @@ public class LicenseResolver implements Serializable {
      */
     byte[] content;
 
-    public record LicenseBody(String uuid, String sign, Store secret) {
+    public LicenseResolver(byte[] content) {
+        this.content = content;
+    }
 
+    public Store toStore() throws IOException {
+        Store tmp = BIOS.memory(content.length);
+        tmp.content(content);
+        return tmp;
+    }
+
+    public record LicenseBody(String uuid,
+                              String sign,
+                              byte[] licBytes) {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            LicenseBody that = (LicenseBody) o;
+            return Objects.equals(uuid, that.uuid) && Objects.equals(sign, that.sign) && Arrays.equals(licBytes, that.licBytes);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(uuid, sign);
+            result = 31 * result + Arrays.hashCode(licBytes);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "LicenseBody{" +
+                    "uuid='" + uuid + '\'' +
+                    ", sign='" + sign + '\'' +
+                    ", licBytes=" + Arrays.toString(licBytes) +
+                    '}';
+        }
     }
 
     public LicenseBody resolve() throws Exception {
         ByteBuffer buffer = ByteBuffer.wrap(content);
+        if (buffer.get() != LicenseConstants.MAGIC_BYTE) {
+            throw new LicenseValidationException(Messages.lite("invalid license"));
+        }
         int uuidLen = buffer.getInt();
         byte[] uuidBytes = new byte[uuidLen];
         buffer.get(uuidBytes, 0, uuidLen);
@@ -61,8 +100,6 @@ public class LicenseResolver implements Serializable {
         if (!sign.equals(genSign)) {
             throw new LicenseValidationException(Messages.lite("invalid signature"));
         }
-        Store tmp = BIOS.memory(licBytes.length);
-        tmp.content(licBytes);
-        return new LicenseBody(uuid, sign, tmp);
+        return new LicenseBody(uuid, sign, licBytes);
     }
 }

@@ -130,7 +130,7 @@ public class OnlineLicenseValidator {
         int len = random.nextInt(9) + 8;
         byte[] array = new byte[len];
         random.nextBytes(array);
-        byte[] licBytes = resolve.secret().content();
+        byte[] licBytes = resolve.licBytes();
         ByteBuffer writerBuff = ByteBuffer.allocate(LicenseConstants.INTEGER_LEN + 1 + len + licBytes.length);
         writerBuff.put(LicenseConstants.MAGIC_BYTE)
                 .putInt(len)
