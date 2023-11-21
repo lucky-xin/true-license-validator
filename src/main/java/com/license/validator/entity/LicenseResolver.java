@@ -81,7 +81,7 @@ public class LicenseResolver implements Serializable {
         }
     }
 
-    public LicenseBody resolve() throws Exception {
+    public LicenseBody resolve() throws LicenseValidationException {
         ByteBuffer buffer = ByteBuffer.wrap(content);
         int uuidLen = buffer.getInt();
         byte[] uuidBytes = new byte[uuidLen];
@@ -99,8 +99,15 @@ public class LicenseResolver implements Serializable {
         String sign = new String(signBytes, StandardCharsets.UTF_8);
 
         String encoded = Base64.getEncoder().encodeToString(licBytes);
-        String genSign = SignatureHelper.genSign(encoded, uuid);
-        if (!sign.equals(genSign)) {
+        try {
+            String genSign = SignatureHelper.genSign(encoded, uuid);
+            if (!sign.equals(genSign)) {
+                throw new LicenseValidationException(Messages.lite("invalid signature"));
+            }
+        } catch (Exception e) {
+            if (e instanceof LicenseValidationException ee) {
+                throw ee;
+            }
             throw new LicenseValidationException(Messages.lite("invalid signature"));
         }
         return new LicenseBody(uuid, sign, licBytes);

@@ -18,7 +18,7 @@ import javax.crypto.SecretKey;
  */
 public class OfflineLicenseValidator extends BaseLicenseValidator {
 
-    private Store licenseFile;
+    private final LicenseResolver resolver;
 
     public OfflineLicenseValidator(
             SecretKey secretKey,
@@ -32,13 +32,13 @@ public class OfflineLicenseValidator extends BaseLicenseValidator {
             LicenseKey licenseKey,
             Store licenseFile) throws Exception {
         super(secretKey, licenseKey, null);
-        LicenseResolver resolver = new LicenseResolver(licenseFile.content());
+        this.resolver = new LicenseResolver(licenseFile.content());
         this.license = resolver.resolve().toStore();
-        this.licenseFile = licenseFile;
     }
 
     @Override
     public LicenseToken verify() throws LicenseManagementException {
+        this.resolver.resolve();
         return super.verify();
     }
 }

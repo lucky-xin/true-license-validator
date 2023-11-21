@@ -6,12 +6,12 @@ import com.license.validator.auth.Messages;
 import com.license.validator.entity.LicenseResolver;
 import com.license.validator.entity.LicenseToken;
 import com.license.validator.entity.R;
-import com.license.validator.exception.LicenseInvalidException;
 import com.license.validator.store.LicenseStore;
 import com.license.validator.store.LocalFileLicenseStore;
 import com.license.validator.svr.ServerInfo;
 import com.license.validator.utils.LicenseConstants;
 import com.license.validator.utils.SysUtil;
+import global.namespace.truelicense.api.LicenseManagementException;
 import global.namespace.truelicense.api.LicenseValidationException;
 import lombok.Setter;
 import org.apache.hc.core5.ssl.SSLContexts;
@@ -42,7 +42,7 @@ import java.util.Random;
  * @version V 1.0
  * @since 2023-11-06
  */
-public class OnlineLicenseValidator {
+public class OnlineLicenseValidator implements LicenseValidator {
     static final Logger log = LoggerFactory.getLogger(OnlineLicenseValidator.class);
 
     private final String licenseFilePath;
@@ -85,14 +85,21 @@ public class OnlineLicenseValidator {
      *
      * @return LicenseContent
      */
-    protected synchronized LicenseToken install() throws Exception {
+    @Override
+    public LicenseToken install() throws LicenseManagementException {
         try (InputStream in = Files.newInputStream(Path.of(licenseFilePath))) {
             token = verify(in.readAllBytes(), "");
+        } catch (Exception e) {
+            if (e instanceof LicenseManagementException ee) {
+                throw ee;
+            }
+            throw new LicenseValidationException(Messages.lite("invalid license"));
         }
         return token;
     }
 
-    public LicenseToken verify() throws Exception {
+    @Override
+    public LicenseToken verify() throws LicenseManagementException {
         if (token == null) {
             synchronized (this) {
                 if (token == null) {
@@ -103,20 +110,19 @@ public class OnlineLicenseValidator {
         return token;
     }
 
-    private LicenseToken initVerify() throws Exception {
-        LicenseToken licenseToken = licenseStore.getLicenseToken();
-        if (licenseToken == null) {
-            LicenseToken verify = install();
-            licenseStore.storeLicenseToken(verify);
-            return verify;
-        }
-
+    private LicenseToken initVerify() throws LicenseManagementException {
         try (InputStream lic = Files.newInputStream(Path.of(licenseFilePath))) {
+            LicenseToken licenseToken = licenseStore.getLicenseToken();
+            if (licenseToken == null) {
+                LicenseToken verify = install();
+                licenseStore.storeLicenseToken(verify);
+                return verify;
+            }
             LicenseToken verify = verify(lic.readAllBytes(), licenseToken.getSerial());
             licenseStore.storeLicenseToken(verify);
             return verify;
         } catch (Exception e) {
-            if (e instanceof LicenseInvalidException l) {
+            if (e instanceof LicenseValidationException l) {
                 throw l;
             }
             log.error("license verify failed", e);

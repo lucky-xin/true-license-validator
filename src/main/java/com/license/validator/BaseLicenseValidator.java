@@ -33,7 +33,7 @@ import java.util.zip.Deflater;
  * @version V 1.0
  * @since 2023-11-06
  */
-public class BaseLicenseValidator {
+public class BaseLicenseValidator implements LicenseValidator {
 
     protected Store license;
     protected volatile LicenseToken token = null;
@@ -96,11 +96,13 @@ public class BaseLicenseValidator {
      *
      * @return LicenseContent
      */
-    public synchronized LicenseToken install() throws LicenseManagementException {
+    @Override
+    public LicenseToken install() throws LicenseManagementException {
         consumerLicenseManager.install(license);
         return new LicenseToken(UUID.randomUUID().toString(), System.currentTimeMillis());
     }
 
+    @Override
     public LicenseToken verify() throws LicenseManagementException {
         if (token == null) {
             synchronized (this) {
