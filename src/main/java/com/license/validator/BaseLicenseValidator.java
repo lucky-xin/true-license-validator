@@ -7,7 +7,6 @@ import com.license.validator.codec.V4CodecFactory;
 import com.license.validator.crypto.V4Encryption;
 import com.license.validator.crypto.V4EncryptionParameters;
 import com.license.validator.entity.LicenseKey;
-import com.license.validator.entity.LicenseResolver;
 import com.license.validator.entity.LicenseToken;
 import com.license.validator.utils.V4ParametersUtils;
 import global.namespace.fun.io.api.Store;
@@ -15,6 +14,7 @@ import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.ConsumerLicenseManager;
 import global.namespace.truelicense.api.LicenseFunctionComposition;
 import global.namespace.truelicense.api.LicenseManagementContext;
+import global.namespace.truelicense.api.LicenseManagementException;
 import global.namespace.truelicense.core.passwd.MinimumPasswordPolicy;
 import global.namespace.truelicense.core.passwd.ObfuscatedPasswordProtection;
 import global.namespace.truelicense.obfuscate.ObfuscatedString;
@@ -96,13 +96,12 @@ public class BaseLicenseValidator {
      *
      * @return LicenseContent
      */
-    public synchronized LicenseToken install() throws Exception {
-        LicenseResolver resolver = new LicenseResolver(license.content());
-        consumerLicenseManager.install(resolver.toStore());
+    public synchronized LicenseToken install() throws LicenseManagementException {
+        consumerLicenseManager.install(license);
         return new LicenseToken(UUID.randomUUID().toString(), System.currentTimeMillis());
     }
 
-    public LicenseToken verify() throws Exception {
+    public LicenseToken verify() throws LicenseManagementException {
         if (token == null) {
             synchronized (this) {
                 if (token == null) {

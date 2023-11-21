@@ -5,6 +5,7 @@ import com.license.validator.entity.LicenseResolver;
 import com.license.validator.entity.LicenseToken;
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
+import global.namespace.truelicense.api.LicenseManagementException;
 
 import javax.crypto.SecretKey;
 
@@ -37,7 +38,7 @@ public class OfflineLicenseValidator extends BaseLicenseValidator {
     }
 
     @Override
-    public LicenseToken verify() throws Exception {
+    public LicenseToken verify() throws LicenseManagementException {
         return super.verify();
     }
 }
