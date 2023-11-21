@@ -2,6 +2,7 @@ package com.license.validator;
 
 import com.license.validator.auth.V4Authentication;
 import com.license.validator.auth.V4AuthenticationParameters;
+import com.license.validator.auth.V4LicenseValidation;
 import com.license.validator.auth.V4RepositoryFactory;
 import com.license.validator.codec.V4CodecFactory;
 import com.license.validator.crypto.V4Encryption;
@@ -44,12 +45,18 @@ public class OfflineLicenseValidator {
     @Setter
     private LicenseStore licenseStore;
 
-
     public OfflineLicenseValidator(
             SecretKey secretKey,
             LicenseKey licenseKey,
             String license) throws IOException {
-        this.license = BIOS.file(license);
+        this(secretKey, licenseKey, BIOS.file(license));
+    }
+
+    public OfflineLicenseValidator(
+            SecretKey secretKey,
+            LicenseKey licenseKey,
+            Store license) throws IOException {
+        this.license = license;
         ObfuscatedString obfuscatedString = new ObfuscatedString(ObfuscatedString.array(licenseKey.getKeyPass()));
         ObfuscatedPasswordProtection protection = new ObfuscatedPasswordProtection(obfuscatedString);
         V4EncryptionParameters parameters = new V4EncryptionParameters(
