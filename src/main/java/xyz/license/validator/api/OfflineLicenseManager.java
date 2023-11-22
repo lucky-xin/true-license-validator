@@ -9,7 +9,6 @@ import xyz.license.validator.entity.LicenseKey;
 import xyz.license.validator.entity.LicenseResolver;
 
 import javax.crypto.SecretKey;
-import java.io.IOException;
 
 /**
  * OfflineLicenseManager
@@ -26,10 +25,14 @@ public class OfflineLicenseManager extends BaseLicenseManager {
 
     public OfflineLicenseManager(SecretKey secretKey,
                                  LicenseKey licenseKey,
-                                 Store licenseFile) throws IOException, LicenseValidationException {
+                                 Store licenseFile) throws LicenseManagementException {
         super(secretKey, licenseKey);
-        this.resolver = new LicenseResolver(licenseFile.content());
-        this.license = resolver.resolve().toStore();
+        try {
+            this.resolver = new LicenseResolver(licenseFile.content());
+            this.license = resolver.resolve().toStore();
+        } catch (Exception e) {
+            throw new LicenseManagementException(e);
+        }
     }
 
     @Override

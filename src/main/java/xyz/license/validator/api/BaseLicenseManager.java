@@ -24,7 +24,6 @@ import xyz.license.validator.entity.LicenseKey;
 import xyz.license.validator.utils.V4ParametersUtils;
 
 import javax.crypto.SecretKey;
-import java.io.IOException;
 import java.time.Clock;
 import java.util.zip.Deflater;
 
@@ -42,46 +41,50 @@ public class BaseLicenseManager implements ConsumerLicenseManager {
 
     public BaseLicenseManager(
             SecretKey secretKey,
-            LicenseKey licenseKey) throws IOException {
-        ObfuscatedString obfuscatedString = new ObfuscatedString(ObfuscatedString.array(licenseKey.getKeyPass()));
-        ObfuscatedPasswordProtection protection = new ObfuscatedPasswordProtection(obfuscatedString);
-        V4EncryptionParameters parameters = new V4EncryptionParameters(
-                secretKey,
-                V4Encryption.ALGORITHM,
-                protection
-        );
-        V4AuthenticationParameters authParams = V4ParametersUtils.authParams(licenseKey);
-        V4Encryption encryption = new V4Encryption(parameters);
-        LicenseManagementContext context = V4.builder()
-                .authenticationFactory(p -> new V4Authentication(authParams))
-                .cachePeriodMillis(1000L)
-                .codecFactory(new V4CodecFactory(encryption))
-                .encryptionFactory(p -> encryption)
-                .clock(Clock.systemUTC())
-                .compression(BIOS.deflate(Deflater.BEST_COMPRESSION))
-                .initializationComposition(LicenseFunctionComposition.decorate)
-                .passwordPolicy(new MinimumPasswordPolicy())
-                .subject(licenseKey.getSubject())
-                .validationComposition(LicenseFunctionComposition.decorate)
-                .repositoryFactory(new V4RepositoryFactory())
-                .build();
+            LicenseKey licenseKey) throws LicenseManagementException {
+        try {
+            ObfuscatedString obfuscatedString = new ObfuscatedString(ObfuscatedString.array(licenseKey.getKeyPass()));
+            ObfuscatedPasswordProtection protection = new ObfuscatedPasswordProtection(obfuscatedString);
+            V4EncryptionParameters parameters = new V4EncryptionParameters(
+                    secretKey,
+                    V4Encryption.ALGORITHM,
+                    protection
+            );
+            V4AuthenticationParameters authParams = V4ParametersUtils.authParams(licenseKey);
+            V4Encryption encryption = new V4Encryption(parameters);
+            LicenseManagementContext context = V4.builder()
+                    .authenticationFactory(p -> new V4Authentication(authParams))
+                    .cachePeriodMillis(1000L)
+                    .codecFactory(new V4CodecFactory(encryption))
+                    .encryptionFactory(p -> encryption)
+                    .clock(Clock.systemUTC())
+                    .compression(BIOS.deflate(Deflater.BEST_COMPRESSION))
+                    .initializationComposition(LicenseFunctionComposition.decorate)
+                    .passwordPolicy(new MinimumPasswordPolicy())
+                    .subject(licenseKey.getSubject())
+                    .validationComposition(LicenseFunctionComposition.decorate)
+                    .repositoryFactory(new V4RepositoryFactory())
+                    .build();
 
-        Store clm = BIOS.memory(1024 * 1024);
-        byte[] keysStoreBytes = licenseKey.getKeysStoreBytes();
-        Store ks = BIOS.memory(keysStoreBytes.length);
-        ks.content(keysStoreBytes);
-        this.consumerLicenseManager = context.consumer()
-                .encryption(encryption)
-                .storeInSystemPreferences(BaseLicenseManager.class)
-                .authentication()
-                .storeProtection(protection)
-                .keyProtection(protection)
-                .alias(licenseKey.getAlias())
-                .algorithm(licenseKey.getAlg())
-                .loadFrom(ks)
-                .up()
-                .storeIn(clm)
-                .build();
+            Store clm = BIOS.memory(1024 * 1024);
+            byte[] keysStoreBytes = licenseKey.getKeysStoreBytes();
+            Store ks = BIOS.memory(keysStoreBytes.length);
+            ks.content(keysStoreBytes);
+            this.consumerLicenseManager = context.consumer()
+                    .encryption(encryption)
+                    .storeInSystemPreferences(BaseLicenseManager.class)
+                    .authentication()
+                    .storeProtection(protection)
+                    .keyProtection(protection)
+                    .alias(licenseKey.getAlias())
+                    .algorithm(licenseKey.getAlg())
+                    .loadFrom(ks)
+                    .up()
+                    .storeIn(clm)
+                    .build();
+        } catch (Exception e) {
+            throw new LicenseManagementException(e);
+        }
     }
 
     @Override

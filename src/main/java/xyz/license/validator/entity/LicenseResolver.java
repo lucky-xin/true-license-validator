@@ -2,6 +2,7 @@ package xyz.license.validator.entity;
 
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
+import global.namespace.truelicense.api.LicenseManagementException;
 import global.namespace.truelicense.api.LicenseValidationException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -50,10 +51,14 @@ public class LicenseResolver implements Serializable {
                               String sign,
                               byte[] licBytes) {
 
-        public Store toStore() throws IOException {
-            Store tmp = BIOS.memory(licBytes.length);
-            tmp.content(licBytes);
-            return tmp;
+        public Store toStore() throws LicenseManagementException {
+            try {
+                Store tmp = BIOS.memory(licBytes.length);
+                tmp.content(licBytes);
+                return tmp;
+            } catch (Exception e) {
+                throw new LicenseManagementException(e);
+            }
         }
 
         @Override
