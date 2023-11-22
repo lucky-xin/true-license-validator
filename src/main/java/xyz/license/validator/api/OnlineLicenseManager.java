@@ -3,7 +3,6 @@ package xyz.license.validator.api;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import global.namespace.fun.io.api.Source;
-import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.ConsumerLicenseManager;
 import global.namespace.truelicense.api.License;
@@ -28,6 +27,7 @@ import xyz.license.validator.utils.LicenseConstants;
 import xyz.license.validator.utils.SysUtil;
 
 import javax.net.ssl.SSLContext;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -51,7 +51,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
 
     static final Logger log = LoggerFactory.getLogger(OnlineLicenseManager.class);
 
-    private final Store license;
+    private final LicenseFileResolver resolver;
     private volatile LicenseToken token;
 
     private final String url;
@@ -65,7 +65,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     public OnlineLicenseManager(
             String licenseValidatorUrl,
             String licenseFilePath) {
-        this.license = BIOS.file(licenseFilePath);
+        this.resolver = new LicenseFileResolver(BIOS.file(licenseFilePath));
         this.url = licenseValidatorUrl;
         boolean isHttps = licenseValidatorUrl.startsWith("https");
         HttpClient.Version version = HttpClient.Version.HTTP_1_1;
@@ -91,11 +91,17 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     @Override
     public void install(Source source) throws LicenseManagementException {
         try {
-            LicenseFileResolver.LicenseBody resolve = new LicenseFileResolver(source).resolve();
+            token = licenseTokenStore.get();
+            LicenseFileResolver.LicenseBody body = resolver.resolve();
+            String serial = "";
+            if (token != null) {
+                token.check(body.uuid());
+                serial = token.getSerial();
+            }
             int len = random.nextInt(9) + 8;
             byte[] array = new byte[len];
             random.nextBytes(array);
-            byte[] licBytes = resolve.licBytes();
+            byte[] licBytes = body.licBytes();
             ByteBuffer writerBuff = ByteBuffer.allocate(LicenseConstants.INTEGER_LEN + 1 + len + licBytes.length);
             writerBuff.put(LicenseConstants.MAGIC_BYTE)
                     .putInt(len)
@@ -107,10 +113,10 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
                     .POST(HttpRequest.BodyPublishers.ofString(
                                     JSON.toJSONString(
                                             Map.of(
-                                                    "uuid", resolve.uuid(),
+                                                    "uuid", body.uuid(),
                                                     "secret", Base64.getEncoder().encodeToString(writerBuff.array()),
                                                     "svr", serverInfo,
-                                                    "serial", ""
+                                                    "serial", serial
                                             )
                                     )
                             )
@@ -144,10 +150,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     @Override
     public void verify() throws LicenseManagementException {
         try {
-            LicenseToken licenseToken = licenseTokenStore.get();
-            if (licenseToken == null) {
-                install(license);
-            }
+            install(this.resolver.getLic());
         } catch (Exception e) {
             if (e instanceof LicenseValidationException l) {
                 throw l;
@@ -159,6 +162,11 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     @Override
     public void uninstall() throws LicenseManagementException {
         token = null;
+        try {
+            licenseTokenStore.remove();
+        } catch (IOException e) {
+            throw new LicenseManagementException(e);
+        }
     }
 
     @Override

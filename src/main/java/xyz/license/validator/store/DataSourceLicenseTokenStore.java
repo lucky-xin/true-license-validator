@@ -63,6 +63,17 @@ public class DataSourceLicenseTokenStore implements LicenseTokenStore {
     }
 
     @Override
+    public void remove() throws IOException {
+        String sql = "delete from " + LOCK_TABLE_NAME + " where serial is not null";
+        try (Connection connection = ds.getConnection();
+             PreparedStatement stat = connection.prepareStatement(sql)) {
+            stat.execute();
+        } catch (SQLException e) {
+            throw new IOException(e);
+        }
+    }
+
+    @Override
     public void store(LicenseToken token) throws IOException {
         String insert = "INSERT INTO  " + LOCK_TABLE_NAME + "(serial,timestamp) VALUES (?, ?)";
         String update = "UPDATE " + LOCK_TABLE_NAME + " set serial = ?, timestamp = ?";

@@ -45,6 +45,16 @@ public class LocalFileLicenseTokenStore implements LicenseTokenStore {
     }
 
     @Override
+    @SuppressWarnings("all")
+    public void remove() throws IOException {
+        File file = new File(lockFileName);
+        if (!file.exists()) {
+            return;
+        }
+        file.delete();
+    }
+
+    @Override
     public void store(LicenseToken token) throws IOException {
         try (OutputStream out = Files.newOutputStream(Path.of(lockFileName))) {
             JSON.writeTo(out, token);

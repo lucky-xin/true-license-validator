@@ -13,7 +13,27 @@ import java.io.IOException;
  */
 public interface LicenseTokenStore {
 
+    /**
+     * get the license token
+     *
+     * @return LicenseToken
+     * @throws IOException
+     */
     LicenseToken get() throws IOException;
+
+    /**
+     * remove the license token
+     *
+     * @throws IOException
+     */
+    void remove() throws IOException;
+
+    /**
+     * store the license token
+     *
+     * @param token tobe store
+     * @throws IOException
+     */
 
     void store(LicenseToken token) throws IOException;
 }
