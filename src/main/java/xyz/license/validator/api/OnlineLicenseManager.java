@@ -3,6 +3,7 @@ package xyz.license.validator.api;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import global.namespace.fun.io.api.Source;
+import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.ConsumerLicenseManager;
 import global.namespace.truelicense.api.License;
@@ -17,17 +18,16 @@ import org.apache.hc.core5.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.license.validator.auth.Messages;
-import xyz.license.validator.entity.LicenseResolver;
+import xyz.license.validator.entity.LicenseFileResolver;
 import xyz.license.validator.entity.LicenseToken;
 import xyz.license.validator.entity.R;
-import xyz.license.validator.store.LicenseStore;
-import xyz.license.validator.store.LocalFileLicenseStore;
+import xyz.license.validator.store.LicenseTokenStore;
+import xyz.license.validator.store.LocalFileLicenseTokenStore;
 import xyz.license.validator.svr.ServerInfo;
 import xyz.license.validator.utils.LicenseConstants;
 import xyz.license.validator.utils.SysUtil;
 
 import javax.net.ssl.SSLContext;
-import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -51,21 +51,21 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
 
     static final Logger log = LoggerFactory.getLogger(OnlineLicenseManager.class);
 
-    private final String licenseFilePath;
+    private final Store license;
     private volatile LicenseToken token;
 
     private final String url;
     private final HttpClient cli;
 
     @Setter
-    private LicenseStore licenseStore;
+    private LicenseTokenStore licenseTokenStore;
 
     private final Random random = new Random();
 
     public OnlineLicenseManager(
             String licenseValidatorUrl,
             String licenseFilePath) {
-        this.licenseFilePath = licenseFilePath;
+        this.license = BIOS.file(licenseFilePath);
         this.url = licenseValidatorUrl;
         boolean isHttps = licenseValidatorUrl.startsWith("https");
         HttpClient.Version version = HttpClient.Version.HTTP_1_1;
@@ -85,14 +85,13 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
                 .version(version)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
-        this.licenseStore = new LocalFileLicenseStore();
+        this.licenseTokenStore = new LocalFileLicenseTokenStore();
     }
 
     @Override
     public void install(Source source) throws LicenseManagementException {
         try {
-            byte[] bytes = source.input().apply(InputStream::readAllBytes);
-            LicenseResolver.LicenseBody resolve = new LicenseResolver(bytes).resolve();
+            LicenseFileResolver.LicenseBody resolve = new LicenseFileResolver(source).resolve();
             int len = random.nextInt(9) + 8;
             byte[] array = new byte[len];
             random.nextBytes(array);
@@ -127,7 +126,8 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
                 throw new LicenseValidationException(Messages.lite(r.getMsg()));
             }
             token = r.getData();
-            licenseStore.storeLicenseToken(token);
+            log.info("install license succeed,serial:{}", token.getSerial());
+            licenseTokenStore.store(token);
         } catch (Exception e) {
             if (e instanceof LicenseValidationException ee) {
                 throw ee;
@@ -144,9 +144,9 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     @Override
     public void verify() throws LicenseManagementException {
         try {
-            LicenseToken licenseToken = licenseStore.getLicenseToken();
+            LicenseToken licenseToken = licenseTokenStore.get();
             if (licenseToken == null) {
-                install(BIOS.file(licenseFilePath));
+                install(license);
             }
         } catch (Exception e) {
             if (e instanceof LicenseValidationException l) {

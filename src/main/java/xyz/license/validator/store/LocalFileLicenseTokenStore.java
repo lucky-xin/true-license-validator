@@ -20,10 +20,10 @@ import java.util.Optional;
  * @version V 1.0
  * @since 2023-11-08
  */
-public class LocalFileLicenseStore implements LicenseStore {
+public class LocalFileLicenseTokenStore implements LicenseTokenStore {
     private final String lockFileName;
 
-    public LocalFileLicenseStore() {
+    public LocalFileLicenseTokenStore() {
         lockFileName = Optional.ofNullable(System.getenv("LICENSE_FILE_PATH"))
                 .map(f -> {
                     int idx = f.lastIndexOf(File.separator);
@@ -33,7 +33,7 @@ public class LocalFileLicenseStore implements LicenseStore {
     }
 
     @Override
-    public LicenseToken getLicenseToken() throws IOException {
+    public LicenseToken get() throws IOException {
         File file = new File(lockFileName);
         if (!file.exists()) {
             return null;
@@ -45,7 +45,7 @@ public class LocalFileLicenseStore implements LicenseStore {
     }
 
     @Override
-    public void storeLicenseToken(LicenseToken token) throws IOException {
+    public void store(LicenseToken token) throws IOException {
         try (OutputStream out = Files.newOutputStream(Path.of(lockFileName))) {
             JSON.writeTo(out, token);
         }

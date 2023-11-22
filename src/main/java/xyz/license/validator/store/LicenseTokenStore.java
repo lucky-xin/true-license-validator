@@ -11,9 +11,9 @@ import java.io.IOException;
  * @version V 1.0
  * @since 2023-11-08
  */
-public interface LicenseStore {
+public interface LicenseTokenStore {
 
-    LicenseToken getLicenseToken() throws IOException;
+    LicenseToken get() throws IOException;
 
-    void storeLicenseToken(LicenseToken token) throws IOException;
+    void store(LicenseToken token) throws IOException;
 }

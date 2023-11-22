@@ -17,11 +17,11 @@ import java.sql.SQLException;
  * @version V 1.0
  * @since 2023-11-08
  */
-public class DataSourceLicenseStore implements LicenseStore {
+public class DataSourceLicenseTokenStore implements LicenseTokenStore {
     private static final String LOCK_TABLE_NAME = "p_lock";
     private final DataSource ds;
 
-    public DataSourceLicenseStore(DataSource ds) {
+    public DataSourceLicenseTokenStore(DataSource ds) {
         this.ds = ds;
         try (Connection connection = ds.getConnection()) {
             DatabaseMetaData metaData = connection.getMetaData();
@@ -47,7 +47,7 @@ public class DataSourceLicenseStore implements LicenseStore {
     }
 
     @Override
-    public LicenseToken getLicenseToken() throws IOException {
+    public LicenseToken get() throws IOException {
         String sql = "select * from " + LOCK_TABLE_NAME + " limit 1";
         try (Connection connection = ds.getConnection();
              PreparedStatement stat = connection.prepareStatement(sql);
@@ -63,7 +63,7 @@ public class DataSourceLicenseStore implements LicenseStore {
     }
 
     @Override
-    public void storeLicenseToken(LicenseToken token) throws IOException {
+    public void store(LicenseToken token) throws IOException {
         String insert = "INSERT INTO  " + LOCK_TABLE_NAME + "(serial,timestamp) VALUES (?, ?)";
         String update = "UPDATE " + LOCK_TABLE_NAME + " set serial = ?, timestamp = ?";
         String query = "SELECT 1 FROM " + LOCK_TABLE_NAME;

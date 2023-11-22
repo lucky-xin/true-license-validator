@@ -1,5 +1,6 @@
 package xyz.license.validator.entity;
 
+import global.namespace.fun.io.api.Source;
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.LicenseManagementException;
@@ -9,9 +10,7 @@ import lombok.NoArgsConstructor;
 import xyz.license.validator.auth.Messages;
 import xyz.license.validator.utils.SignatureHelper;
 
-import java.io.IOException;
-import java.io.Serial;
-import java.io.Serializable;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -19,7 +18,7 @@ import java.util.Base64;
 import java.util.Objects;
 
 /**
- * License密钥
+ * License密钥文件解析器
  *
  * @author luchaoxin
  * @version V 1.0
@@ -27,24 +26,15 @@ import java.util.Objects;
  */
 @Data
 @NoArgsConstructor
-public class LicenseResolver implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 8600137500316662317L;
+public class LicenseFileResolver {
 
     /**
      * license 内容
      */
-    byte[] content;
+    private Source lic;
 
-    public LicenseResolver(byte[] content) {
-        this.content = content;
-    }
-
-    public Store toStore() throws IOException {
-        Store tmp = BIOS.memory(content.length);
-        tmp.content(content);
-        return tmp;
+    public LicenseFileResolver(Source lic) {
+        this.lic = lic;
     }
 
     public record LicenseBody(String uuid,
@@ -87,34 +77,37 @@ public class LicenseResolver implements Serializable {
     }
 
     public LicenseBody resolve() throws LicenseValidationException {
-        ByteBuffer buffer = ByteBuffer.wrap(content);
-        int uuidLen = buffer.getInt();
-        byte[] uuidBytes = new byte[uuidLen];
-        buffer.get(uuidBytes, 0, uuidLen);
-
-        int signLen = buffer.getInt();
-        byte[] signBytes = new byte[signLen];
-        buffer.get(signBytes, 0, signLen);
-        int start = buffer.position() + buffer.arrayOffset();
-        int length = buffer.limit() - uuidLen - signLen - 8;
-        byte[] licBytes = new byte[length];
-        buffer.get(start, licBytes, 0, length);
-
-        String uuid = new String(uuidBytes, StandardCharsets.UTF_8);
-        String sign = new String(signBytes, StandardCharsets.UTF_8);
-
-        String encoded = Base64.getEncoder().encodeToString(licBytes);
         try {
+            ByteBuffer buffer = ByteBuffer.wrap(
+                    lic.applyReader(InputStream::readAllBytes)
+            );
+            int uuidLen = buffer.getInt();
+            byte[] uuidBytes = new byte[uuidLen];
+            buffer.get(uuidBytes, 0, uuidLen);
+
+            int signLen = buffer.getInt();
+            byte[] signBytes = new byte[signLen];
+            buffer.get(signBytes, 0, signLen);
+            int start = buffer.position() + buffer.arrayOffset();
+            int length = buffer.limit() - uuidLen - signLen - 8;
+            byte[] licBytes = new byte[length];
+            buffer.get(start, licBytes, 0, length);
+
+            String uuid = new String(uuidBytes, StandardCharsets.UTF_8);
+            String sign = new String(signBytes, StandardCharsets.UTF_8);
+
+            String encoded = Base64.getEncoder().encodeToString(licBytes);
+
             String genSign = SignatureHelper.genSign(encoded, uuid);
             if (!sign.equals(genSign)) {
                 throw new LicenseValidationException(Messages.lite("invalid signature"));
             }
+            return new LicenseBody(uuid, sign, licBytes);
         } catch (Exception e) {
             if (e instanceof LicenseValidationException ee) {
                 throw ee;
             }
             throw new LicenseValidationException(Messages.lite("invalid signature"));
         }
-        return new LicenseBody(uuid, sign, licBytes);
     }
 }
