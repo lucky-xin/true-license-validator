@@ -48,20 +48,14 @@ import java.util.Random;
  * @since 2023/11/19
  */
 public class OnlineLicenseManager implements ConsumerLicenseManager {
-
     static final Logger log = LoggerFactory.getLogger(OnlineLicenseManager.class);
-
     private final LicenseFileResolver resolver;
     private volatile LicenseToken token;
-
     private final String url;
     private final HttpClient cli;
-
     @Setter
     private LicenseTokenStore licenseTokenStore;
-
     private final Random random = new Random();
-    private final String invalidMsg = "invalid license";
 
     public OnlineLicenseManager(
             String licenseValidatorUrl,
@@ -97,16 +91,13 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         } catch (Exception e) {
             throw new LicenseValidationException(Messages.lite("get license token failed"));
         }
-
+        String serial = "";
         if (token != null) {
             token.check(body.uuid());
+            serial = token.getSerial();
         }
         R<LicenseToken> r = null;
         try {
-            String serial = "";
-            if (token != null) {
-                serial = token.getSerial();
-            }
             int len = random.nextInt(9) + 8;
             byte[] array = new byte[len];
             random.nextBytes(array);
@@ -132,8 +123,8 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
                     )
                     .setHeader("Content-Type", "application/json")
                     .build();
-            HttpResponse<String> response = cli.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            String json = response.body();
+            HttpResponse<String> resp = cli.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            String json = resp.body();
             Type type = new TypeReference<R<LicenseToken>>() {
             }.getType();
             r = JSON.parseObject(json, type);
