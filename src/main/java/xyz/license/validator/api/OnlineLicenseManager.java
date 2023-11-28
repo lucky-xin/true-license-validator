@@ -61,6 +61,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     private LicenseTokenStore licenseTokenStore;
 
     private final Random random = new Random();
+    private final String invalidMsg = "invalid license";
 
     public OnlineLicenseManager(
             String licenseValidatorUrl,
@@ -90,12 +91,20 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
 
     @Override
     public void install(Source source) throws LicenseManagementException {
+        LicenseFileResolver.LicenseBody body = resolver.resolve();
         try {
             token = licenseTokenStore.get();
-            LicenseFileResolver.LicenseBody body = resolver.resolve();
+        } catch (Exception e) {
+            throw new LicenseValidationException(Messages.lite("get license token failed"));
+        }
+
+        if (token != null) {
+            token.check(body.uuid());
+        }
+        R<LicenseToken> r = null;
+        try {
             String serial = "";
             if (token != null) {
-                token.check(body.uuid());
                 serial = token.getSerial();
             }
             int len = random.nextInt(9) + 8;
@@ -127,20 +136,26 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             String json = response.body();
             Type type = new TypeReference<R<LicenseToken>>() {
             }.getType();
-            R<LicenseToken> r = JSON.parseObject(json, type);
-            if (r.getCode() != 1) {
-                throw new LicenseValidationException(Messages.lite(r.getMsg()));
+            r = JSON.parseObject(json, type);
+        } catch (Exception e) {
+            log.error("verify license failed", e);
+            if (token != null) {
+                // 联网校验失败，如果上一次认证token存在，则当前认证通过
+                return;
             }
+            throw new LicenseManagementException(e);
+        }
+        if (r != null && r.getCode() == 1) {
             token = r.getData();
             log.info("install license succeed,serial:{}", token.getSerial());
-            licenseTokenStore.store(token);
-        } catch (Exception e) {
-            if (e instanceof LicenseValidationException ee) {
-                throw ee;
+            try {
+                licenseTokenStore.store(token);
+            } catch (IOException e) {
+                throw new LicenseManagementException(e);
             }
-            throw new LicenseValidationException(Messages.lite("invalid license"));
         }
     }
+
 
     @Override
     public License load() throws LicenseManagementException {
