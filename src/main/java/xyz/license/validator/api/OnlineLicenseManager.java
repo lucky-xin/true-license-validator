@@ -89,7 +89,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         try {
             token = licenseTokenStore.get();
         } catch (Exception e) {
-            throw new LicenseValidationException(Messages.lite("get license token failed"));
+            throw new LicenseManagementException(e);
         }
         String serial = "";
         if (token != null) {
@@ -128,10 +128,10 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             Type type = new TypeReference<R<LicenseToken>>() {
             }.getType();
             r = JSON.parseObject(json, type);
-        } catch (Exception e) {
-            log.error("verify license failed", e);
+        } catch (Throwable e) {
             if (token != null) {
                 // 联网校验失败，如果上一次认证token存在，则当前认证通过
+                log.info("license verify failed has lock in cache skip error");
                 return;
             }
             throw new LicenseManagementException(e);
@@ -141,10 +141,13 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             log.info("install license succeed,serial:{}", token.getSerial());
             try {
                 licenseTokenStore.store(token);
+                return;
             } catch (IOException e) {
                 throw new LicenseManagementException(e);
             }
+
         }
+        throw new LicenseValidationException(Messages.lite("invalid license"));
     }
 
 
@@ -158,10 +161,10 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         try {
             install(this.resolver.getLic());
         } catch (Exception e) {
-            if (e instanceof LicenseValidationException l) {
+            log.error("license verify failed", e);
+            if (e instanceof LicenseManagementException l) {
                 throw l;
             }
-            log.error("license verify failed", e);
         }
     }
 
