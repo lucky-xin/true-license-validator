@@ -1,6 +1,7 @@
 package xyz.license.validator.entity;
 
 import global.namespace.truelicense.api.License;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.io.Serial;
@@ -33,7 +34,13 @@ public class CreatorParam implements Serializable {
     /**
      * 证书失效时间，必传
      */
+    @NotNull(message = "expiry must not nbe null")
     private Date expiry;
+
+    /**
+     * 产品编码
+     */
+    private String sku;
 
     /**
      * 证书x500Name,非必传

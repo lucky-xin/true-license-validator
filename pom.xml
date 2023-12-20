@@ -4,7 +4,7 @@
 
     <groupId>com.license.validator</groupId>
     <artifactId>true-license-validator</artifactId>
-    <version>1.0.19</version>
+    <version>1.0.20</version>
 
     <name>true-license-validator</name>
     <url>http://maven.apache.org</url>
@@ -58,7 +58,13 @@
             <version>2.15.3</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.0.2</version>
+        </dependency>
     </dependencies>
+
 
     <build>
         <resources>

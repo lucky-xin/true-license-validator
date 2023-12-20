@@ -77,6 +77,7 @@ public class LicenseToken implements Serializable {
             int length = buffer.limit() - randomLen - 5;
             byte[] signBytes = new byte[length];
             buffer.get(start, signBytes, 0, length);
+
             String random = new String(randomBytes, StandardCharsets.UTF_8);
             String sign = new String(signBytes, StandardCharsets.UTF_8);
             String newSign = SignatureHelper.genSign(random, uuid);

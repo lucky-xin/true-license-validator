@@ -91,6 +91,9 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         } catch (Exception e) {
             throw new LicenseManagementException(e);
         }
+        if (!body.sku().equals(System.getenv("SKU"))) {
+            throw new LicenseValidationException(Messages.lite("Invalid license"));
+        }
         String serial = "";
         if (token != null) {
             token.check(body.uuid());
