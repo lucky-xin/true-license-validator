@@ -20,6 +20,7 @@ import java.sql.SQLException;
 public class DataSourceLicenseTokenStore implements LicenseTokenStore {
     private static final String LOCK_TABLE_NAME = "p_lock";
     private final DataSource ds;
+    private LicenseToken token;
 
     public DataSourceLicenseTokenStore(DataSource ds) {
         this.ds = ds;
@@ -48,14 +49,17 @@ public class DataSourceLicenseTokenStore implements LicenseTokenStore {
 
     @Override
     public LicenseToken get() throws IOException {
+        if (token != null) {
+            return token;
+        }
         String sql = "select * from " + LOCK_TABLE_NAME + " limit 1";
         try (Connection connection = ds.getConnection();
              PreparedStatement stat = connection.prepareStatement(sql);
              ResultSet rs = stat.executeQuery()) {
             if (rs.next()) {
-                return new LicenseToken(rs.getString("serial"), rs.getLong("timestamp"));
+                token = new LicenseToken(rs.getString("serial"), rs.getLong("timestamp"));
             }
-            return null;
+            return token;
         } catch (SQLException e) {
             throw new IOException(e);
         }
@@ -68,6 +72,7 @@ public class DataSourceLicenseTokenStore implements LicenseTokenStore {
         try (Connection connection = ds.getConnection();
              PreparedStatement stat = connection.prepareStatement(sql)) {
             stat.execute();
+            token = null;
         } catch (SQLException e) {
             throw new IOException(e);
         }
@@ -89,6 +94,7 @@ public class DataSourceLicenseTokenStore implements LicenseTokenStore {
                 statement.setLong(2, token.getTimestamp());
                 statement.execute();
             }
+            this.token = token;
         } catch (SQLException e) {
             throw new IOException(e);
         }
