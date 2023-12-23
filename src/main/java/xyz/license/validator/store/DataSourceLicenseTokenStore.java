@@ -81,13 +81,12 @@ public class DataSourceLicenseTokenStore implements LicenseTokenStore {
     @Override
     public void store(LicenseToken token) throws IOException {
         String insert = "INSERT INTO  " + LOCK_TABLE_NAME + "(serial,timestamp) VALUES (?, ?)";
-        String update = "UPDATE " + LOCK_TABLE_NAME + " set serial = ?, timestamp = ?";
         String query = "SELECT 1 FROM " + LOCK_TABLE_NAME;
         String sql = insert;
         try (Connection connection = ds.getConnection();
-             PreparedStatement existPs = connection.prepareStatement(query);) {
+             PreparedStatement existPs = connection.prepareStatement(query)) {
             if (existPs.executeQuery().next()) {
-                sql = update;
+                sql = "UPDATE " + LOCK_TABLE_NAME + " set serial = ?, timestamp = ?";;
             }
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, token.getSerial());
