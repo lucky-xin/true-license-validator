@@ -58,6 +58,11 @@ public class CreatorParam implements Serializable {
     private String description;
 
     /**
+     * license版本,目前支持：1（默认），2
+     */
+    private Byte version;
+
+    /**
      * 可被允许的IP地址
      */
     private Set<String> ipAddrs;
