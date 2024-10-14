@@ -27,9 +27,9 @@ public class LocalFileLicenseTokenStore implements LicenseTokenStore {
         lockFileName = Optional.ofNullable(System.getenv("LICENSE_FILE_PATH"))
                 .map(f -> {
                     int idx = f.lastIndexOf(File.separator);
-                    return f.substring(0, idx) + File.separator + "lock";
+                    return f.substring(0, idx) + File.separator + "license.lock";
                 })
-                .orElse("lock");
+                .orElse("license.lock");
     }
 
     @Override
