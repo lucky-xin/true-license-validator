@@ -13,8 +13,7 @@ public interface LicenseConstants {
      * 魔法数字
      */
     byte MAGIC_BYTE = 0x0;
-    /**
-     * 整型长度
-     */
-    int INTEGER_LEN = 4;
+
+
+    String SKU_NAME = "SKU";
 }

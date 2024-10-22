@@ -91,7 +91,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         } catch (Exception e) {
             throw new LicenseManagementException(e);
         }
-        if (!body.sku().equals(System.getenv("SKU"))) {
+        if (!body.sku().equals(System.getenv(LicenseConstants.SKU_NAME))) {
             throw new LicenseValidationException(Messages.lite("Invalid license"));
         }
         String serial = "";
@@ -105,7 +105,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             byte[] array = new byte[len];
             random.nextBytes(array);
             byte[] licBytes = body.licBytes();
-            ByteBuffer writerBuff = ByteBuffer.allocate(LicenseConstants.INTEGER_LEN + 1 + len + licBytes.length);
+            ByteBuffer writerBuff = ByteBuffer.allocate(Integer.SIZE + 1 + len + licBytes.length);
             writerBuff.put(LicenseConstants.MAGIC_BYTE)
                     .putInt(len)
                     .put(array)

@@ -50,7 +50,8 @@ public class V4LicenseValidation implements LicenseValidation {
         if (null == bean.getIssuer()) {
             throw new LicenseValidationException(message(Messages.ISSUER_IS_NULL));
         }
-        final Date now = now(); // don't trust the system clock!
+        // don't trust the system clock!
+        final Date now = now();
         final Date notAfter = bean.getNotAfter();
         if (null != notAfter && now.after(notAfter)) {
             throw new LicenseValidationException(message(Messages.LICENSE_HAS_EXPIRED, notAfter));

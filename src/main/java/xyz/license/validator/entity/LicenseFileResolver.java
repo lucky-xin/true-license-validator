@@ -54,8 +54,12 @@ public class LicenseFileResolver {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
             LicenseBody that = (LicenseBody) o;
             return Objects.equals(uuid, that.uuid)
                     && Objects.equals(sign, that.sign)
