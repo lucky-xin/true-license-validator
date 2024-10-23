@@ -5,11 +5,11 @@ import global.namespace.truelicense.api.LicenseValidationException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import xyz.encryption.SM2;
 import xyz.license.validator.auth.Messages;
 import xyz.license.validator.text.Block;
 import xyz.license.validator.text.Segment;
 import xyz.license.validator.utils.LicenseConstants;
-import xyz.license.validator.utils.SignatureHelper;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * LicenseToken
+ * LicenseTokenV2
  *
  * @author luchaoxin
  * @version V 1.0
@@ -41,10 +41,15 @@ public class LicenseTokenV2 implements Serializable {
 
     public static LicenseTokenV2 create(String uuid) throws LicenseManagementException {
         try {
+            SM2 sm2 = SM2.fromHex(
+                    System.getenv("TRUE_LICENSE_PRIVATE_KEY_HEX"),
+                    System.getenv("TRUE_LICENSE_PUBLIC_KEY_HEX")
+            );
             String random = UUID.randomUUID().toString();
-            String sign = SignatureHelper.genSign(random, uuid);
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            String signed = sm2.sign(random + "/" + uuid + "/" + timestamp);
             byte[] randomBytes = random.getBytes(StandardCharsets.UTF_8);
-            byte[] signBytes = sign.getBytes(StandardCharsets.UTF_8);
+            byte[] signBytes = signed.getBytes(StandardCharsets.UTF_8);
             byte[] timestampBytes = String.valueOf(System.currentTimeMillis()).getBytes(StandardCharsets.UTF_8);
             Block b = new Block();
             b.setMagic(LicenseConstants.MAGIC_BYTE);
@@ -71,7 +76,12 @@ public class LicenseTokenV2 implements Serializable {
             String random = new String(this.block.getSegments().get(0).getBytes(), StandardCharsets.UTF_8);
             String sign = new String(this.block.getSegments().get(1).getBytes(), StandardCharsets.UTF_8);
             String timestamp = new String(this.block.getSegments().get(2).getBytes(), StandardCharsets.UTF_8);
-            String newSign = SignatureHelper.genSign(random, uuid);
+
+            SM2 sm2 = SM2.fromHex(
+                    System.getenv("TRUE_LICENSE_PRIVATE_KEY_HEX"),
+                    System.getenv("TRUE_LICENSE_PUBLIC_KEY_HEX")
+            );
+            String newSign = sm2.sign(random + "/" + uuid + "/" + timestamp);
             assert Objects.equals(sign, newSign);
             return new Parser(random, sign);
         } catch (Exception e) {
