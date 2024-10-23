@@ -41,13 +41,10 @@ public class LicenseTokenV2 implements Serializable {
 
     public static LicenseTokenV2 create(String uuid) throws LicenseManagementException {
         try {
-            SM2 sm2 = SM2.fromHex(
-                    System.getenv("TRUE_LICENSE_PRIVATE_KEY_HEX"),
-                    System.getenv("TRUE_LICENSE_PUBLIC_KEY_HEX")
-            );
             String random = UUID.randomUUID().toString();
             String timestamp = String.valueOf(System.currentTimeMillis());
-            String signed = sm2.sign(random + "/" + uuid + "/" + timestamp);
+            String signed = sign(uuid, random, timestamp);
+
             byte[] randomBytes = random.getBytes(StandardCharsets.UTF_8);
             byte[] signBytes = signed.getBytes(StandardCharsets.UTF_8);
             byte[] timestampBytes = String.valueOf(System.currentTimeMillis()).getBytes(StandardCharsets.UTF_8);
@@ -70,26 +67,38 @@ public class LicenseTokenV2 implements Serializable {
         return new LicenseTokenV2(b);
     }
 
-    public Parser check(String uuid) throws LicenseValidationException {
+    public Secret check(String uuid) throws LicenseValidationException {
         try {
             assert this.block.getSegments().size() == 3;
             String random = new String(this.block.getSegments().get(0).getBytes(), StandardCharsets.UTF_8);
             String sign = new String(this.block.getSegments().get(1).getBytes(), StandardCharsets.UTF_8);
             String timestamp = new String(this.block.getSegments().get(2).getBytes(), StandardCharsets.UTF_8);
+            String newSign = sign(uuid, random, timestamp);
 
-            SM2 sm2 = SM2.fromHex(
-                    System.getenv("TRUE_LICENSE_PRIVATE_KEY_HEX"),
-                    System.getenv("TRUE_LICENSE_PUBLIC_KEY_HEX")
-            );
-            String newSign = sm2.sign(random + "/" + uuid + "/" + timestamp);
             assert Objects.equals(sign, newSign);
-            return new Parser(random, sign);
+            return new Secret(uuid, random, timestamp, sign);
         } catch (Exception e) {
             throw new LicenseValidationException(Messages.lite("invalid license token"));
         }
     }
 
-    public record Parser(String random, String sign) {
+    private static String sign(String uuid, String random, String timestamp)
+            throws LicenseValidationException {
+        try {
+            SM2 sm2 = SM2.fromHex(
+                    System.getenv("TRUE_LICENSE_PRIVATE_KEY_HEX"),
+                    System.getenv("TRUE_LICENSE_PUBLIC_KEY_HEX")
+            );
+            return sm2.sign(uuid + "/" + random + "/" + timestamp);
+        } catch (Exception e) {
+            throw new LicenseValidationException(Messages.lite("sign error:" + e.getMessage()));
+        }
+    }
 
+    public record Secret(String uuid, String random, String timestamp, String sign) {
+        @Override
+        public String toString() {
+            return uuid + "/" + random + "/" + timestamp + "/" + sign;
+        }
     }
 }
