@@ -101,7 +101,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         }
         R<LicenseToken> r = null;
         try {
-            int len = random.nextInt(9) + 8;
+            int len = random.nextInt(9) + Byte.SIZE;
             byte[] array = new byte[len];
             random.nextBytes(array);
             byte[] licBytes = body.licBytes();

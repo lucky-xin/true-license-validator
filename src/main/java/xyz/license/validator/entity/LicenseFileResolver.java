@@ -103,7 +103,7 @@ public class LicenseFileResolver {
             buffer.get(productCodeBytes, 0, productCodeLen);
 
             int start = buffer.position() + buffer.arrayOffset();
-            int length = buffer.limit() - uuidLen - signLen - productCodeLen - 12;
+            int length = buffer.limit() - uuidLen - signLen - productCodeLen - Integer.BYTES * 3;
             byte[] licBytes = new byte[length];
             buffer.get(start, licBytes, 0, length);
 
