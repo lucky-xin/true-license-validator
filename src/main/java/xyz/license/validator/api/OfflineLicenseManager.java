@@ -1,13 +1,14 @@
 package xyz.license.validator.api;
 
 import global.namespace.fun.io.api.Source;
-import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.LicenseManagementException;
 import global.namespace.truelicense.api.LicenseValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import xyz.license.validator.entity.LicenseKey;
 import xyz.license.validator.entity.LicenseFileResolver;
+import xyz.license.validator.entity.LicenseKey;
+import xyz.license.validator.enums.FileType;
+import xyz.license.validator.utils.LicenseManagerUtils;
 
 import javax.crypto.SecretKey;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,12 +27,14 @@ public class OfflineLicenseManager extends BaseLicenseManager {
     private final LicenseFileResolver resolver;
     private final AtomicBoolean installed = new AtomicBoolean(false);
 
+
     public OfflineLicenseManager(SecretKey secretKey,
                                  LicenseKey licenseKey,
-                                 String licenseFile) throws LicenseManagementException {
+                                 String licenseFile,
+                                 FileType type) throws LicenseManagementException {
         super(secretKey, licenseKey);
         try {
-            this.resolver = new LicenseFileResolver(BIOS.file(licenseFile));
+            this.resolver = LicenseManagerUtils.createResolver(licenseFile, type);
             this.license = resolver.resolve().toStore();
         } catch (Exception e) {
             throw new LicenseManagementException(e);

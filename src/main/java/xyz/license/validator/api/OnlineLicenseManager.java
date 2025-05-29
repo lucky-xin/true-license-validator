@@ -3,7 +3,6 @@ package xyz.license.validator.api;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import global.namespace.fun.io.api.Source;
-import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.ConsumerLicenseManager;
 import global.namespace.truelicense.api.License;
 import global.namespace.truelicense.api.LicenseManagementContext;
@@ -12,22 +11,25 @@ import global.namespace.truelicense.api.LicenseManagerParameters;
 import global.namespace.truelicense.api.LicenseValidationException;
 import global.namespace.truelicense.api.UncheckedConsumerLicenseManager;
 import lombok.Setter;
-import org.apache.hc.core5.ssl.SSLContexts;
-import org.apache.hc.core5.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.license.validator.auth.Messages;
 import xyz.license.validator.entity.LicenseFileResolver;
 import xyz.license.validator.entity.LicenseToken;
 import xyz.license.validator.entity.R;
+import xyz.license.validator.enums.FileType;
 import xyz.license.validator.store.LicenseTokenStore;
 import xyz.license.validator.store.LocalFileLicenseTokenStore;
 import xyz.license.validator.svr.ServerInfo;
 import xyz.license.validator.utils.LicenseConstants;
+import xyz.license.validator.utils.LicenseManagerUtils;
 import xyz.license.validator.utils.SysUtil;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -35,6 +37,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
@@ -57,29 +62,23 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     private LicenseTokenStore licenseTokenStore;
     private final Random random = new Random();
 
-    public OnlineLicenseManager(
-            String licenseValidatorUrl,
-            String licenseFilePath) {
-        this.resolver = new LicenseFileResolver(BIOS.file(licenseFilePath));
+    public OnlineLicenseManager(String licenseValidatorUrl, String licenseFilePath, FileType type) {
         this.url = licenseValidatorUrl;
+        this.resolver = LicenseManagerUtils.createResolver(licenseFilePath, type);
         boolean isHttps = licenseValidatorUrl.startsWith("https");
         HttpClient.Version version = HttpClient.Version.HTTP_1_1;
         HttpClient.Builder builder = HttpClient.newBuilder();
         if (isHttps) {
             version = HttpClient.Version.HTTP_2;
-            TrustStrategy ts = (x509Certificates, s) -> true;
             try {
-                SSLContext context = SSLContexts.custom().loadTrustMaterial(ts).build();
+                SSLContext context = createContext();
                 builder.sslContext(context);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
         }
 
-        this.cli = builder
-                .version(version)
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
+        this.cli = builder.version(version).connectTimeout(Duration.ofSeconds(10)).build();
         this.licenseTokenStore = new LocalFileLicenseTokenStore();
     }
 
@@ -106,24 +105,17 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             random.nextBytes(array);
             byte[] licBytes = body.licBytes();
             ByteBuffer writerBuff = ByteBuffer.allocate(Integer.BYTES + 1 + len + licBytes.length);
-            writerBuff.put(LicenseConstants.MAGIC_BYTE)
-                    .putInt(len)
-                    .put(array)
-                    .put(licBytes);
+            writerBuff.put(LicenseConstants.MAGIC_BYTE).putInt(len).put(array).put(licBytes);
             ServerInfo serverInfo = SysUtil.getServerInfo();
+            Map<String, Serializable> params = Map.of(
+                    "uuid", body.uuid(),
+                    "secret", Base64.getEncoder().encodeToString(writerBuff.array()),
+                    "svr", serverInfo,
+                    "serial", serial
+            );
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .POST(HttpRequest.BodyPublishers.ofString(
-                                    JSON.toJSONString(
-                                            Map.of(
-                                                    "uuid", body.uuid(),
-                                                    "secret", Base64.getEncoder().encodeToString(writerBuff.array()),
-                                                    "svr", serverInfo,
-                                                    "serial", serial
-                                            )
-                                    )
-                            )
-                    )
+                    .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(params)))
                     .setHeader("Content-Type", "application/json")
                     .build();
             HttpResponse<String> resp = cli.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
@@ -195,4 +187,28 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     public LicenseManagementContext context() {
         return ConsumerLicenseManager.super.context();
     }
+
+    private static SSLContext createContext() throws NoSuchAlgorithmException, KeyManagementException {
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    @Override
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+
+                    @Override
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+
+                    @Override
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }
+        };
+
+        SSLContext context = SSLContext.getInstance("SSL");
+        context.init(null, trustAllCerts, new java.security.SecureRandom());
+        return context;
+    }
+
 }
