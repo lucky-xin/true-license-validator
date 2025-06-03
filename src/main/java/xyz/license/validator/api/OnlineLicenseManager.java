@@ -3,6 +3,8 @@ package xyz.license.validator.api;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import global.namespace.fun.io.api.Source;
+import global.namespace.fun.io.api.Store;
+import global.namespace.fun.io.bios.BIOS;
 import global.namespace.truelicense.api.ConsumerLicenseManager;
 import global.namespace.truelicense.api.License;
 import global.namespace.truelicense.api.LicenseManagementContext;
@@ -14,10 +16,12 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.license.validator.auth.Messages;
-import xyz.license.validator.entity.LicenseFileResolver;
+import xyz.license.validator.entity.LicenseBody;
 import xyz.license.validator.entity.LicenseToken;
 import xyz.license.validator.entity.R;
 import xyz.license.validator.enums.FileType;
+import xyz.license.validator.enums.Version;
+import xyz.license.validator.resolver.LicenceResolver;
 import xyz.license.validator.store.LicenseTokenStore;
 import xyz.license.validator.store.LocalFileLicenseTokenStore;
 import xyz.license.validator.svr.ServerInfo;
@@ -54,7 +58,7 @@ import java.util.Random;
  */
 public class OnlineLicenseManager implements ConsumerLicenseManager {
     static final Logger log = LoggerFactory.getLogger(OnlineLicenseManager.class);
-    private final LicenseFileResolver resolver;
+    private final LicenceResolver resolver;
     private volatile LicenseToken token;
     private final String url;
     private final HttpClient cli;
@@ -62,12 +66,14 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     private LicenseTokenStore licenseTokenStore;
     private final Random random = new Random();
 
-    public OnlineLicenseManager(String licenseValidatorUrl, String licenseFilePath, FileType type) {
+    private Store store;
+
+    public OnlineLicenseManager(String licenseValidatorUrl, String licenseFilePath, FileType type, Version ver) {
         this.url = licenseValidatorUrl;
-        this.resolver = LicenseManagerUtils.createResolver(licenseFilePath, type);
-        boolean isHttps = licenseValidatorUrl.startsWith("https");
+        this.resolver = LicenseManagerUtils.createResolver(licenseFilePath, type, ver);
         HttpClient.Version version = HttpClient.Version.HTTP_1_1;
         HttpClient.Builder builder = HttpClient.newBuilder();
+        boolean isHttps = licenseValidatorUrl.startsWith("https");
         if (isHttps) {
             version = HttpClient.Version.HTTP_2;
             try {
@@ -84,7 +90,27 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
 
     @Override
     public void install(Source source) throws LicenseManagementException {
-        LicenseFileResolver.LicenseBody body = resolver.resolve();
+        try {
+            if (this.store != null) {
+                return;
+            }
+            byte[] bytes = BIOS.content(source);
+            this.store = BIOS.memory(bytes.length);
+            this.store.content(bytes);
+        } catch (Exception e) {
+            throw new LicenseManagementException(e);
+        }
+    }
+
+
+    @Override
+    public License load() throws LicenseManagementException {
+        throw new UnsupportedOperationException("Unsupported load license");
+    }
+
+    @Override
+    public void verify() throws LicenseManagementException {
+        LicenseBody body = resolver.resolve();
         try {
             token = licenseTokenStore.get();
         } catch (Exception e) {
@@ -98,24 +124,27 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             token.check(body.uuid());
             serial = token.getSerial();
         }
-        R<LicenseToken> r = null;
+        byte[] licBytes = body.licBytes();
+
+        R<LicenseToken> r;
         try {
             int len = random.nextInt(9) + Byte.SIZE;
             byte[] array = new byte[len];
             random.nextBytes(array);
-            byte[] licBytes = body.licBytes();
             ByteBuffer writerBuff = ByteBuffer.allocate(Integer.BYTES + 1 + len + licBytes.length);
             writerBuff.put(LicenseConstants.MAGIC_BYTE).putInt(len).put(array).put(licBytes);
+            String secret = Base64.getEncoder().encodeToString(writerBuff.array());
             ServerInfo serverInfo = SysUtil.getServerInfo();
             Map<String, Serializable> params = Map.of(
                     "uuid", body.uuid(),
-                    "secret", Base64.getEncoder().encodeToString(writerBuff.array()),
+                    "secret", secret,
                     "svr", serverInfo,
                     "serial", serial
             );
+            String reqJson = JSON.toJSONString(params);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(params)))
+                    .POST(HttpRequest.BodyPublishers.ofString(reqJson))
                     .setHeader("Content-Type", "application/json")
                     .build();
             HttpResponse<String> resp = cli.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
@@ -123,7 +152,8 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             Type type = new TypeReference<R<LicenseToken>>() {
             }.getType();
             r = JSON.parseObject(json, type);
-        } catch (Throwable e) {
+            log.debug("license verify req:{} response:{}", reqJson, json);
+        } catch (Exception e) {
             if (token != null) {
                 // 联网校验失败，如果上一次认证token存在，则当前认证通过
                 log.info("license verify failed has lock in cache skip error");
@@ -140,27 +170,11 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             } catch (IOException e) {
                 throw new LicenseManagementException(e);
             }
-
+        }
+        if (r != null) {
+            log.error("license verify failed,error:{}", r.getMsg());
         }
         throw new LicenseValidationException(Messages.lite("invalid license"));
-    }
-
-
-    @Override
-    public License load() throws LicenseManagementException {
-        throw new UnsupportedOperationException("Unsupported load license");
-    }
-
-    @Override
-    public void verify() throws LicenseManagementException {
-        try {
-            install(this.resolver.getLic());
-        } catch (Exception e) {
-            log.error("license verify failed", e);
-            if (e instanceof LicenseManagementException l) {
-                throw l;
-            }
-        }
     }
 
     @Override

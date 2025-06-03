@@ -58,7 +58,10 @@ public class Block implements Serializable {
             buffer.put(magic);
         }
         // 写入所有segments的数据
-        segments.forEach(t -> buffer.put(t.getBytes()));
+        segments.forEach(t -> {
+            buffer.putInt(t.getLength());
+            buffer.put(t.getBytes());
+        });
         return buffer;
     }
 
@@ -79,16 +82,13 @@ public class Block implements Serializable {
                 throw new IllegalArgumentException("Invalid magic");
             }
         }
-        idx += 4;
-        int limit = buffer.limit();
-        int len = buffer.getInt();
         List<Segment> segments = new LinkedList<>();
-        // 从缓冲区中读取所有段
-        while (idx < limit) {
+        while (idx < buffer.limit()) {
+            int len = buffer.getInt();
             byte[] bytes = new byte[len];
-            buffer.get(idx, bytes);
+            buffer.get(bytes, 0, len);
             segments.add(new Segment(len, bytes));
-            idx += len;
+            idx += len + 4;
         }
         return new Block(magic, segments);
     }

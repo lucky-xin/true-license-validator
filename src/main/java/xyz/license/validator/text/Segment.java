@@ -30,4 +30,14 @@ public class Segment implements Serializable {
      * 段内容
      */
     private byte[] bytes;
+
+    public Segment(byte[] bytes) {
+        this.bytes = bytes;
+        this.length = bytes.length;
+    }
+
+    public Segment(byte[] bytes, int length) {
+        this.bytes = bytes;
+        this.length = length;
+    }
 }

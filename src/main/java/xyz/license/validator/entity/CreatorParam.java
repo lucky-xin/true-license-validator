@@ -3,6 +3,7 @@ package xyz.license.validator.entity;
 import global.namespace.truelicense.api.License;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import xyz.license.validator.enums.FileType;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -81,6 +82,11 @@ public class CreatorParam implements Serializable {
      * 可被允许的主板序列号
      */
     private String boardSerial;
+
+    /**
+     * 文件类型，默认为BINARY
+     */
+    private FileType type = FileType.BINARY;
 
     public License toLicense(License orig) {
         orig.setIssued(this.issued);

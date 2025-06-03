@@ -5,9 +5,10 @@ import global.namespace.truelicense.api.LicenseManagementException;
 import global.namespace.truelicense.api.LicenseValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import xyz.license.validator.entity.LicenseFileResolver;
 import xyz.license.validator.entity.LicenseKey;
 import xyz.license.validator.enums.FileType;
+import xyz.license.validator.enums.Version;
+import xyz.license.validator.resolver.LicenceResolver;
 import xyz.license.validator.utils.LicenseManagerUtils;
 
 import javax.crypto.SecretKey;
@@ -24,17 +25,18 @@ public class OfflineLicenseManager extends BaseLicenseManager {
 
     static final Logger log = LoggerFactory.getLogger(OfflineLicenseManager.class);
 
-    private final LicenseFileResolver resolver;
+    private final LicenceResolver resolver;
     private final AtomicBoolean installed = new AtomicBoolean(false);
 
 
     public OfflineLicenseManager(SecretKey secretKey,
                                  LicenseKey licenseKey,
                                  String licenseFile,
-                                 FileType type) throws LicenseManagementException {
+                                 FileType type,
+                                 Version version) throws LicenseManagementException {
         super(secretKey, licenseKey);
         try {
-            this.resolver = LicenseManagerUtils.createResolver(licenseFile, type);
+            this.resolver = LicenseManagerUtils.createResolver(licenseFile, type, version);
             this.license = resolver.resolve().toStore();
         } catch (Exception e) {
             throw new LicenseManagementException(e);
