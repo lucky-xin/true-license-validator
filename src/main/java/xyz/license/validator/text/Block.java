@@ -35,7 +35,6 @@ public class Block implements Serializable {
      */
     private List<Segment> segments;
 
-
     /**
      * 将当前数据转换为ByteBuffer。
      * 该方法首先计算所有segments（文本片段）的字节长度总和，如果存在magic字节，则总长度会增加1。
@@ -46,13 +45,10 @@ public class Block implements Serializable {
     public ByteBuffer toBuffer() {
         // 计算所有segments的字节长度总和，如果存在magic字节，总长度会增加1
         int count = segments.stream()
-                .mapToInt(t -> t.getBytes().length)
+                .mapToInt(t -> t.getBytes().length + Integer.BYTES)
                 .sum();
         if (magic != null) {
             count++;
-        }
-        for (Segment segment : segments) {
-            count += segment.getLength() + Integer.BYTES;
         }
         // 分配足够大的ByteBuffer
         ByteBuffer buffer = ByteBuffer.allocate(count);

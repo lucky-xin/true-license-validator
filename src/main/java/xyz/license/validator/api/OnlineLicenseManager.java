@@ -1,5 +1,8 @@
 package xyz.license.validator.api;
 
+import cn.hutool.core.net.DefaultTrustManager;
+import cn.hutool.core.net.SSLContextBuilder;
+import cn.hutool.core.net.SSLProtocols;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import global.namespace.fun.io.api.Source;
@@ -12,7 +15,6 @@ import global.namespace.truelicense.api.LicenseManagementException;
 import global.namespace.truelicense.api.LicenseManagerParameters;
 import global.namespace.truelicense.api.LicenseValidationException;
 import global.namespace.truelicense.api.UncheckedConsumerLicenseManager;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.license.validator.auth.Messages;
@@ -21,17 +23,15 @@ import xyz.license.validator.entity.LicenseToken;
 import xyz.license.validator.entity.R;
 import xyz.license.validator.enums.FileType;
 import xyz.license.validator.enums.Version;
+import xyz.license.validator.factory.LicenceResolverFactory;
 import xyz.license.validator.resolver.LicenceResolver;
 import xyz.license.validator.store.LicenseTokenStore;
 import xyz.license.validator.store.LocalFileLicenseTokenStore;
 import xyz.license.validator.svr.ServerInfo;
 import xyz.license.validator.utils.LicenseConstants;
-import xyz.license.validator.utils.LicenseManagerUtils;
 import xyz.license.validator.utils.SysUtil;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -41,12 +41,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -56,37 +55,18 @@ import java.util.Random;
  * @version V 1.0
  * @since 2023/11/19
  */
+
 public class OnlineLicenseManager implements ConsumerLicenseManager {
     static final Logger log = LoggerFactory.getLogger(OnlineLicenseManager.class);
+
+    private final LicenseTokenStore tokenStore;
     private final LicenceResolver resolver;
-    private volatile LicenseToken token;
-    private final String url;
     private final HttpClient cli;
-    @Setter
-    private LicenseTokenStore licenseTokenStore;
-    private final Random random = new Random();
+    private final Random random;
+    private final String url;
 
+    private LicenseToken token;
     private Store store;
-
-    public OnlineLicenseManager(String licenseValidatorUrl, String licenseFilePath, FileType type, Version ver) {
-        this.url = licenseValidatorUrl;
-        this.resolver = LicenseManagerUtils.createResolver(licenseFilePath, type, ver);
-        HttpClient.Version version = HttpClient.Version.HTTP_1_1;
-        HttpClient.Builder builder = HttpClient.newBuilder();
-        boolean isHttps = licenseValidatorUrl.startsWith("https");
-        if (isHttps) {
-            version = HttpClient.Version.HTTP_2;
-            try {
-                SSLContext context = createContext();
-                builder.sslContext(context);
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        this.cli = builder.version(version).connectTimeout(Duration.ofSeconds(10)).build();
-        this.licenseTokenStore = new LocalFileLicenseTokenStore();
-    }
 
     @Override
     public void install(Source source) throws LicenseManagementException {
@@ -112,7 +92,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     public void verify() throws LicenseManagementException {
         LicenseBody body = resolver.resolve();
         try {
-            token = licenseTokenStore.get();
+            token = tokenStore.get();
         } catch (Exception e) {
             throw new LicenseManagementException(e);
         }
@@ -149,9 +129,9 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
                     .build();
             HttpResponse<String> resp = cli.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             String json = resp.body();
-            Type type = new TypeReference<R<LicenseToken>>() {
+            Type tr = new TypeReference<R<LicenseToken>>() {
             }.getType();
-            r = JSON.parseObject(json, type);
+            r = JSON.parseObject(json, tr);
             log.debug("license verify req:{} response:{}", reqJson, json);
         } catch (Exception e) {
             if (token != null) {
@@ -165,7 +145,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             token = r.getData();
             log.info("install license succeed,serial:{}", token.getSerial());
             try {
-                licenseTokenStore.store(token);
+                tokenStore.store(token);
                 return;
             } catch (IOException e) {
                 throw new LicenseManagementException(e);
@@ -181,7 +161,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
     public void uninstall() throws LicenseManagementException {
         token = null;
         try {
-            licenseTokenStore.remove();
+            tokenStore.remove();
         } catch (IOException e) {
             throw new LicenseManagementException(e);
         }
@@ -202,27 +182,143 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         return ConsumerLicenseManager.super.context();
     }
 
-    private static SSLContext createContext() throws NoSuchAlgorithmException, KeyManagementException {
-        TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    @Override
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-
-                    @Override
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                    }
-
-                    @Override
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                    }
-                }
-        };
-
-        SSLContext context = SSLContext.getInstance("SSL");
-        context.init(null, trustAllCerts, new java.security.SecureRandom());
-        return context;
+    private static SSLContext createContext() {
+        return SSLContextBuilder.create()
+                .setProtocol(SSLProtocols.TLS)
+                .setTrustManagers(DefaultTrustManager.INSTANCE)
+                .setSecureRandom(new SecureRandom())
+                .build();
     }
 
+
+    private static LicenseTokenStore $default$tokenStore() {
+        return new LocalFileLicenseTokenStore();
+    }
+
+
+    private static Version $default$version() {
+        return Version.V_1_0;
+    }
+
+
+    private static FileType $default$type() {
+        return FileType.BASE64;
+    }
+
+
+    private static Random $default$random() {
+        return new Random();
+    }
+
+    OnlineLicenseManager(LicenseTokenStore tokenStore,
+                         Random random,
+                         LicenceResolver resolver,
+                         String url,
+                         HttpClient cli) {
+        this.tokenStore = tokenStore;
+        this.random = random;
+        this.resolver = resolver;
+        this.url = url;
+        this.cli = cli;
+    }
+
+
+    public static OnlineLicenseManagerBuilder builder() {
+        return new OnlineLicenseManagerBuilder();
+    }
+
+
+    public static class OnlineLicenseManagerBuilder {
+
+        private LicenseTokenStore tokenStore;
+
+        private Version version;
+
+        private FileType type;
+
+        private Random random;
+
+        private String licenseFilePath;
+
+        private String url;
+
+        private SSLContext sslContext;
+
+        OnlineLicenseManagerBuilder() {
+        }
+
+        public OnlineLicenseManagerBuilder tokenStore(LicenseTokenStore tokenStore) {
+            this.tokenStore = tokenStore;
+            return this;
+        }
+
+        public OnlineLicenseManagerBuilder version(Version version) {
+            this.version = version;
+            return this;
+        }
+
+        public OnlineLicenseManagerBuilder type(FileType type) {
+            this.type = type;
+            return this;
+        }
+
+        public OnlineLicenseManagerBuilder random(Random random) {
+            this.random = random;
+            return this;
+        }
+
+        public OnlineLicenseManagerBuilder licenseFilePath(String licenseFilePath) {
+            this.licenseFilePath = licenseFilePath;
+            return this;
+        }
+
+        public OnlineLicenseManagerBuilder url(String url) {
+            this.url = url;
+            return this;
+        }
+
+        public OnlineLicenseManagerBuilder sslContext(SSLContext sslContext) {
+            this.sslContext = sslContext;
+            return this;
+        }
+
+        public OnlineLicenseManager build() {
+            tokenStore = Optional.ofNullable(this.tokenStore)
+                    .orElseGet(OnlineLicenseManager::$default$tokenStore);
+            version = Optional.ofNullable(this.version)
+                    .orElseGet(OnlineLicenseManager::$default$version);
+            type = Optional.ofNullable(this.type)
+                    .orElseGet(OnlineLicenseManager::$default$type);
+            random = Optional.ofNullable(this.random)
+                    .orElseGet(OnlineLicenseManager::$default$random);
+            LicenceResolver resolver = LicenceResolverFactory.builder()
+                    .type(type)
+                    .licenseFilePath(this.licenseFilePath)
+                    .version(version)
+                    .build()
+                    .create();
+            HttpClient.Builder builder = HttpClient.newBuilder();
+            boolean isHttps = this.url.startsWith("https");
+            HttpClient.Version httpVersion = HttpClient.Version.HTTP_1_1;
+            if (isHttps) {
+                httpVersion = HttpClient.Version.HTTP_2;
+                SSLContext context = Optional.ofNullable(sslContext)
+                        .orElseGet(() -> {
+                            try {
+                                return createContext();
+                            } catch (Exception e) {
+                                throw new IllegalStateException(e);
+                            }
+                        });
+                builder.sslContext(context);
+            }
+            HttpClient cli = builder.version(httpVersion).connectTimeout(Duration.ofSeconds(10)).build();
+            return new OnlineLicenseManager(tokenStore, random, resolver, this.url, cli);
+        }
+
+        @Override
+        public String toString() {
+            return "OnlineLicenseManager.OnlineLicenseManagerBuilder(tokenStore=" + this.tokenStore + ", version=" + this.version + ", type=" + this.type + ", random=" + this.random + ", licenseFilePath=" + this.licenseFilePath + ", url=" + this.url + ")";
+        }
+    }
 }

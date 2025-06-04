@@ -8,8 +8,8 @@ import org.slf4j.LoggerFactory;
 import xyz.license.validator.entity.LicenseKey;
 import xyz.license.validator.enums.FileType;
 import xyz.license.validator.enums.Version;
+import xyz.license.validator.factory.LicenceResolverFactory;
 import xyz.license.validator.resolver.LicenceResolver;
-import xyz.license.validator.utils.LicenseManagerUtils;
 
 import javax.crypto.SecretKey;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,7 +36,12 @@ public class OfflineLicenseManager extends BaseLicenseManager {
                                  Version version) throws LicenseManagementException {
         super(secretKey, licenseKey);
         try {
-            this.resolver = LicenseManagerUtils.createResolver(licenseFile, type, version);
+            this.resolver = LicenceResolverFactory.builder()
+                    .licenseFilePath(licenseFile)
+                    .type(type)
+                    .version(version)
+                    .build()
+                    .create();
             this.license = resolver.resolve().toStore();
         } catch (Exception e) {
             throw new LicenseManagementException(e);

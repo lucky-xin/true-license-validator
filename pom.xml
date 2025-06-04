@@ -4,7 +4,7 @@
 
     <groupId>com.license.validator</groupId>
     <artifactId>true-license-validator</artifactId>
-    <version>1.0.31</version>
+    <version>1.0.34</version>
 
     <name>true-license-validator</name>
     <url>http://maven.apache.org</url>
@@ -27,6 +27,11 @@
             <groupId>org.apache.httpcomponents.core5</groupId>
             <artifactId>httpcore5</artifactId>
             <version>5.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
+            <version>5.8.38</version>
         </dependency>
         <dependency>
             <groupId>global.namespace.truelicense</groupId>

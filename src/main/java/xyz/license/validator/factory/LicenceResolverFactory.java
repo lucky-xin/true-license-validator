@@ -1,7 +1,8 @@
-package xyz.license.validator.utils;
+package xyz.license.validator.factory;
 
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
+import lombok.Builder;
 import xyz.license.validator.enums.FileType;
 import xyz.license.validator.enums.Version;
 import xyz.license.validator.resolver.LicenceResolver;
@@ -20,9 +21,14 @@ import java.util.Base64;
  * @version V 1.0
  * @since 2025-05-29
  */
-public class LicenseManagerUtils {
+@Builder
+public class LicenceResolverFactory {
 
-    public static LicenceResolver createResolver(String licenseFilePath, FileType type, Version version) {
+    private String licenseFilePath;
+    private FileType type;
+    private Version version;
+
+    public LicenceResolver create() {
         return switch (type) {
             case BINARY -> switch (version) {
                 case V_1_0 -> new ResolverV1(BIOS.file(licenseFilePath));
