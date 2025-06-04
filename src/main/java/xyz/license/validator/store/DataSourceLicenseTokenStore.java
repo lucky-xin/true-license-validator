@@ -1,5 +1,6 @@
 package xyz.license.validator.store;
 
+import cn.hutool.db.meta.MetaUtil;
 import xyz.license.validator.entity.LicenseToken;
 
 import javax.sql.DataSource;
@@ -9,6 +10,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * License 校验成功缓存
@@ -25,10 +27,8 @@ public class DataSourceLicenseTokenStore implements LicenseTokenStore {
     public DataSourceLicenseTokenStore(DataSource ds) {
         this.ds = ds;
         try (Connection connection = ds.getConnection()) {
-            DatabaseMetaData metaData = connection.getMetaData();
-            ResultSet tables = metaData.getTables(null, "%", LOCK_TABLE_NAME, new String[]{"TABLE"});
-            try (tables) {
-                if (!tables.next()) {
+            List<String> tableNames = MetaUtil.getTables(ds);
+            if (!tableNames.contains(LOCK_TABLE_NAME)) {
                     String sql = """
                             create table p_lock
                             (
@@ -41,7 +41,6 @@ public class DataSourceLicenseTokenStore implements LicenseTokenStore {
                         ps.execute();
                     }
                 }
-            }
         } catch (SQLException e) {
             throw new IllegalStateException(e);
         }

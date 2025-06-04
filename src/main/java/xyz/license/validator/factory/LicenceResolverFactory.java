@@ -1,5 +1,6 @@
 package xyz.license.validator.factory;
 
+import cn.hutool.core.io.resource.Resource;
 import global.namespace.fun.io.api.Store;
 import global.namespace.fun.io.bios.BIOS;
 import lombok.Builder;
@@ -9,9 +10,7 @@ import xyz.license.validator.resolver.LicenceResolver;
 import xyz.license.validator.resolver.ResolverV1;
 import xyz.license.validator.resolver.ResolverV2;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Base64;
 
 /**
@@ -24,30 +23,21 @@ import java.util.Base64;
 @Builder
 public class LicenceResolverFactory {
 
-    private String licenseFilePath;
+    private Resource license;
     private FileType type;
     private Version version;
 
-    public LicenceResolver create() {
-        return switch (type) {
-            case BINARY -> switch (version) {
-                case V_1_0 -> new ResolverV1(BIOS.file(licenseFilePath));
-                case V_2_0 -> new ResolverV2(BIOS.file(licenseFilePath));
-            };
-            case BASE64 -> {
-                try (InputStream in = new FileInputStream(licenseFilePath)) {
-                    byte[] bytes = Base64.getDecoder().decode(in.readAllBytes());
-                    Store memory = BIOS.memory(bytes.length);
-                    memory.content(bytes);
-                    yield switch (version) {
-                        case V_1_0 -> new ResolverV1(memory);
-                        case V_2_0 -> new ResolverV2(memory);
-                    };
-                } catch (IOException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
+    public LicenceResolver create() throws IOException {
+        byte[] bytes = switch (type) {
+            case BINARY -> license.readBytes();
+            case BASE64 -> Base64.getDecoder().decode(license.readBytes());
             default -> throw new IllegalStateException("Invalid type");
+        };
+        Store store = BIOS.memory(bytes.length);
+        store.content(bytes);
+        return switch (version) {
+            case V_1_0 -> new ResolverV1(store);
+            case V_2_0 -> new ResolverV2(store);
         };
     }
 }

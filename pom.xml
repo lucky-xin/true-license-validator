@@ -4,7 +4,7 @@
 
     <groupId>com.license.validator</groupId>
     <artifactId>true-license-validator</artifactId>
-    <version>1.0.34</version>
+    <version>1.0.36</version>
 
     <name>true-license-validator</name>
     <url>http://maven.apache.org</url>
@@ -31,6 +31,11 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-core</artifactId>
+            <version>5.8.38</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-db</artifactId>
             <version>5.8.38</version>
         </dependency>
         <dependency>

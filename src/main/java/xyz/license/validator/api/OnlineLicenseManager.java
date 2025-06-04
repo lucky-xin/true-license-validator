@@ -1,5 +1,6 @@
 package xyz.license.validator.api;
 
+import cn.hutool.core.io.resource.Resource;
 import cn.hutool.core.net.DefaultTrustManager;
 import cn.hutool.core.net.SSLContextBuilder;
 import cn.hutool.core.net.SSLProtocols;
@@ -238,7 +239,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
 
         private Random random;
 
-        private String licenseFilePath;
+        private Resource license;
 
         private String url;
 
@@ -267,8 +268,8 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             return this;
         }
 
-        public OnlineLicenseManagerBuilder licenseFilePath(String licenseFilePath) {
-            this.licenseFilePath = licenseFilePath;
+        public OnlineLicenseManagerBuilder license(Resource license) {
+            this.license = license;
             return this;
         }
 
@@ -282,7 +283,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             return this;
         }
 
-        public OnlineLicenseManager build() {
+        public OnlineLicenseManager build() throws IOException {
             tokenStore = Optional.ofNullable(this.tokenStore)
                     .orElseGet(OnlineLicenseManager::$default$tokenStore);
             version = Optional.ofNullable(this.version)
@@ -293,7 +294,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
                     .orElseGet(OnlineLicenseManager::$default$random);
             LicenceResolver resolver = LicenceResolverFactory.builder()
                     .type(type)
-                    .licenseFilePath(this.licenseFilePath)
+                    .license(this.license)
                     .version(version)
                     .build()
                     .create();
@@ -318,7 +319,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
 
         @Override
         public String toString() {
-            return "OnlineLicenseManager.OnlineLicenseManagerBuilder(tokenStore=" + this.tokenStore + ", version=" + this.version + ", type=" + this.type + ", random=" + this.random + ", licenseFilePath=" + this.licenseFilePath + ", url=" + this.url + ")";
+            return "OnlineLicenseManager.OnlineLicenseManagerBuilder(tokenStore=" + this.tokenStore + ", version=" + this.version + ", type=" + this.type + ", random=" + this.random + ", license=" + this.license + ", url=" + this.url + ")";
         }
     }
 }

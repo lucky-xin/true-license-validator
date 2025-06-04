@@ -1,5 +1,6 @@
 package xyz.license.validator.api;
 
+import cn.hutool.core.io.resource.Resource;
 import global.namespace.fun.io.api.Source;
 import global.namespace.truelicense.api.LicenseManagementException;
 import global.namespace.truelicense.api.LicenseValidationException;
@@ -31,13 +32,14 @@ public class OfflineLicenseManager extends BaseLicenseManager {
 
     public OfflineLicenseManager(SecretKey secretKey,
                                  LicenseKey licenseKey,
-                                 String licenseFile,
+                                 Resource license,
                                  FileType type,
                                  Version version) throws LicenseManagementException {
         super(secretKey, licenseKey);
         try {
+
             this.resolver = LicenceResolverFactory.builder()
-                    .licenseFilePath(licenseFile)
+                    .license(license)
                     .type(type)
                     .version(version)
                     .build()
