@@ -4,7 +4,7 @@
 
     <groupId>com.license.validator</groupId>
     <artifactId>true-license-validator</artifactId>
-    <version>1.0.30</version>
+    <version>1.0.31</version>
 
     <name>true-license-validator</name>
     <url>http://maven.apache.org</url>

@@ -51,6 +51,9 @@ public class Block implements Serializable {
         if (magic != null) {
             count++;
         }
+        for (Segment segment : segments) {
+            count += segment.getLength() + Integer.BYTES;
+        }
         // 分配足够大的ByteBuffer
         ByteBuffer buffer = ByteBuffer.allocate(count);
         if (magic != null) {
