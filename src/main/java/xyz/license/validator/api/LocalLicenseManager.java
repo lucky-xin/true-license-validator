@@ -11,31 +11,36 @@ import xyz.license.validator.enums.FileType;
 import xyz.license.validator.enums.Version;
 import xyz.license.validator.factory.LicenceResolverFactory;
 import xyz.license.validator.resolver.LicenceResolver;
+import xyz.license.validator.utils.AESUtil;
 
-import javax.crypto.SecretKey;
+import javax.crypto.NoSuchPaddingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * OfflineLicenseManager
+ * LocalLicenseManager
  *
  * @author chaoxin.lu
  * @version V 1.0
  * @since 2023/11/19
  */
-public class OfflineLicenseManager extends BaseLicenseManager {
+public class LocalLicenseManager extends BaseLicenseManager {
 
-    static final Logger log = LoggerFactory.getLogger(OfflineLicenseManager.class);
+    static final Logger log = LoggerFactory.getLogger(LocalLicenseManager.class);
 
     private final LicenceResolver resolver;
     private final AtomicBoolean installed = new AtomicBoolean(false);
 
 
-    public OfflineLicenseManager(SecretKey secretKey,
-                                 LicenseKey licenseKey,
-                                 Resource license,
-                                 FileType type,
-                                 Version version) throws LicenseManagementException {
-        super(secretKey, licenseKey);
+    public LocalLicenseManager(LicenseKey licenseKey,
+                               Resource license,
+                               FileType type,
+                               Version version)
+            throws LicenseManagementException, NoSuchPaddingException, NoSuchAlgorithmException,
+            NoSuchProviderException, InvalidKeyException {
+        super(AESUtil.secretKey(licenseKey.getAesKeyBytes()), licenseKey);
         try {
 
             this.resolver = LicenceResolverFactory.builder()

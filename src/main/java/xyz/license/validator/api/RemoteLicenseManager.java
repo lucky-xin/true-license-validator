@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.license.validator.auth.Messages;
 import xyz.license.validator.entity.LicenseBody;
+import xyz.license.validator.entity.LicenseKey;
 import xyz.license.validator.entity.LicenseToken;
 import xyz.license.validator.entity.R;
 import xyz.license.validator.enums.FileType;
@@ -32,6 +33,7 @@ import xyz.license.validator.svr.ServerInfo;
 import xyz.license.validator.utils.LicenseConstants;
 import xyz.license.validator.utils.SysUtil;
 
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.io.Serializable;
@@ -42,23 +44,27 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
 /**
- * OnlineLicenseManager
+ * RemoteLicenseManager
  *
  * @author chaoxin.lu
  * @version V 1.0
  * @since 2023/11/19
  */
 
-public class OnlineLicenseManager implements ConsumerLicenseManager {
-    static final Logger log = LoggerFactory.getLogger(OnlineLicenseManager.class);
+public class RemoteLicenseManager implements ConsumerLicenseManager {
+    static final Logger log = LoggerFactory.getLogger(RemoteLicenseManager.class);
 
     private final LicenseTokenStore tokenStore;
     private final LicenceResolver resolver;
@@ -211,7 +217,7 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         return new Random();
     }
 
-    OnlineLicenseManager(LicenseTokenStore tokenStore,
+    RemoteLicenseManager(LicenseTokenStore tokenStore,
                          Random random,
                          LicenceResolver resolver,
                          String url,
@@ -244,6 +250,10 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
         private String url;
 
         private SSLContext sslContext;
+
+        private LocalLicenseManager localLicenseManager;
+
+        private LicenseKey licenseKey;
 
         OnlineLicenseManagerBuilder() {
         }
@@ -283,15 +293,26 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
             return this;
         }
 
-        public OnlineLicenseManager build() throws IOException {
+        public OnlineLicenseManagerBuilder offlineLicenseManager(LocalLicenseManager localLicenseManager) {
+            this.localLicenseManager = localLicenseManager;
+            return this;
+        }
+
+        public OnlineLicenseManagerBuilder licenseKey(LicenseKey licenseKey) {
+            this.licenseKey = licenseKey;
+            return this;
+        }
+
+        public RemoteLicenseManager build() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
+                NoSuchProviderException, InvalidKeyException, LicenseManagementException {
             tokenStore = Optional.ofNullable(this.tokenStore)
-                    .orElseGet(OnlineLicenseManager::$default$tokenStore);
+                    .orElseGet(RemoteLicenseManager::$default$tokenStore);
             version = Optional.ofNullable(this.version)
-                    .orElseGet(OnlineLicenseManager::$default$version);
+                    .orElseGet(RemoteLicenseManager::$default$version);
             type = Optional.ofNullable(this.type)
-                    .orElseGet(OnlineLicenseManager::$default$type);
+                    .orElseGet(RemoteLicenseManager::$default$type);
             random = Optional.ofNullable(this.random)
-                    .orElseGet(OnlineLicenseManager::$default$random);
+                    .orElseGet(RemoteLicenseManager::$default$random);
             LicenceResolver resolver = LicenceResolverFactory.builder()
                     .type(type)
                     .license(this.license)
@@ -314,7 +335,21 @@ public class OnlineLicenseManager implements ConsumerLicenseManager {
                 builder.sslContext(context);
             }
             HttpClient cli = builder.version(httpVersion).connectTimeout(Duration.ofSeconds(10)).build();
-            return new OnlineLicenseManager(tokenStore, random, resolver, this.url, cli);
+            if (this.localLicenseManager == null && this.licenseKey != null) {
+                this.localLicenseManager = new LocalLicenseManager(
+                        this.licenseKey,
+                        this.license,
+                        this.type,
+                        this.version
+                );
+            }
+            return new RemoteLicenseManager(
+                    tokenStore,
+                    random,
+                    resolver,
+                    Objects.requireNonNull(this.url),
+                    cli
+            );
         }
 
         @Override
