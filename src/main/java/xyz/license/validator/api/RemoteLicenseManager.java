@@ -98,25 +98,25 @@ public class RemoteLicenseManager implements ConsumerLicenseManager {
     @Override
     public void verify() throws LicenseManagementException {
         LicenseBody body = resolver.resolve();
-        try {
-            token = tokenStore.get();
-        } catch (Exception e) {
-            throw new LicenseManagementException(e);
-        }
         if (!body.sku().equals(System.getenv(LicenseConstants.SKU_NAME))) {
             throw new LicenseValidationException(Messages.lite("Invalid license"));
         }
-        String serial = "";
-        if (token != null) {
-            token.check(body.uuid());
-            serial = token.getSerial();
-        }
-        byte[] licBytes = body.licBytes();
 
+        String serial = "";
+        try {
+            token = tokenStore.get();
+            if (token != null) {
+                token.check(body.uuid());
+                serial = token.getSerial();
+            }
+        } catch (Exception e) {
+            throw new LicenseManagementException(e);
+        }
         R<LicenseToken> r;
         try {
             int len = random.nextInt(9) + Byte.SIZE;
             byte[] array = new byte[len];
+            byte[] licBytes = body.licBytes();
             random.nextBytes(array);
             ByteBuffer writerBuff = ByteBuffer.allocate(Integer.BYTES + 1 + len + licBytes.length);
             writerBuff.put(LicenseConstants.MAGIC_BYTE).putInt(len).put(array).put(licBytes);
