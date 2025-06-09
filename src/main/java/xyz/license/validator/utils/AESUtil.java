@@ -1,7 +1,6 @@
 package xyz.license.validator.utils;
 
 import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
